@@ -21,3 +21,11 @@ Keep the working v0.5 LINDEX integration variables unchanged.
 ## Important permission model
 CD7 Platform Owner -> Club license -> Club enabled -> Staff/member permission.
 A club cannot enable a module that CD7 has not licensed to it.
+
+
+## v0.7
+See `README-v0.7.md`. Run migration `005_onboarding_tee_sheet.sql` after deploying.
+
+
+## v0.7
+See `README-v0.7.md`. Run migration `005_onboarding_tee_sheet.sql` after deploying.
