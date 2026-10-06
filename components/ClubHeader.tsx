@@ -1,2 +1,20 @@
-'use client';import {useEffect,useState} from 'react';import Link from 'next/link';import {Building2} from 'lucide-react';import {createClient} from '../lib/supabase/client';
-export default function ClubHeader({id}:{id:string}){const [club,setClub]=useState<any>();useEffect(()=>{createClient().from('clubs').select('name,club_type,plan,status,logo_url').eq('id',id).single().then(({data})=>setClub(data))},[id]);return <><div className="clubbrand"><div className="clubIdentity"><div className="clubLogo large">{club?.logo_url?<img src={club.logo_url} alt=""/>:<Building2/>}</div><div><div className="eyebrow">ORGANIZATION</div><h1>{club?.name||'Club'}</h1><div className="chips"><span className="chip good">{club?.status||'active'}</span><span className="chip">{club?.plan}</span></div></div></div><div className="powered">CLUVEXA <small>by CD7 Technologies</small></div></div><div className="clubnav"><Link href={`/clubs/${id}`}>Overview</Link><Link href={`/clubs/${id}/modules`}>Modules & Licensing</Link><Link href={`/clubs/${id}/platforms`}>Connected Platforms</Link><Link href={`/clubs/${id}/memberships`}>Memberships</Link><Link href={`/clubs/${id}/events`}>Events</Link><Link href={`/clubs/${id}/settings`}>Club Settings</Link></div></>}
+'use client';
+import {useEffect,useState} from 'react';
+import Link from 'next/link';
+import {Building2} from 'lucide-react';
+import {createClient} from '../lib/supabase/client';
+
+export default function ClubHeader({id,title,subtitle}:{id:string;title?:string;subtitle?:string}){
+  const [club,setClub]=useState<any>();
+  useEffect(()=>{createClient().from('clubs').select('name,club_type,plan,status,logo_url').eq('id',id).single().then(({data})=>setClub(data))},[id]);
+  return <>
+    <div className="clubbrand">
+      <div className="clubIdentity">
+        <div className="clubLogo large">{club?.logo_url?<img src={club.logo_url} alt=""/>:<Building2/>}</div>
+        <div><div className="eyebrow">ORGANIZATION</div><h1>{title||club?.name||'Club'}</h1>{subtitle&&<div className="muted">{subtitle}</div>}<div className="chips"><span className="chip good">{club?.status||'active'}</span><span className="chip">{club?.plan}</span></div></div>
+      </div>
+      <div className="powered">CLUVEXA <small>by CD7 Technologies</small></div>
+    </div>
+    <div className="clubnav"><Link href={`/clubs/${id}`}>Overview</Link><Link href={`/clubs/${id}/modules`}>Modules & Licensing</Link><Link href={`/clubs/${id}/platforms`}>Connected Platforms</Link><Link href={`/clubs/${id}/memberships`}>Memberships</Link><Link href={`/clubs/${id}/events`}>Events</Link><Link href={`/clubs/${id}/settings`}>Club Settings</Link></div>
+  </>
+}
