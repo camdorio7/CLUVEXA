@@ -1,0 +1,2 @@
+'use client';import WorkspaceShell from '../../../../components/WorkspaceShell';import WorkspaceHeader from '../../../../components/WorkspaceHeader';
+export default function Page(){return <WorkspaceShell><WorkspaceHeader title="Access" subtitle="Organization module"/><div className="panel"><div className="panelhead">Access</div><div className="empty">This module is enabled for your organization and ready for club-specific configuration.</div></div></WorkspaceShell>}
