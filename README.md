@@ -1,25 +1,21 @@
-# CLUVEXA v0.1
-The operating platform for modern private clubs — by CD7 Technologies.
+# CLUVEXA v0.2
 
-## Included
-- Next.js + TypeScript web application
-- CD7 Super Admin console UI
-- Organization/club creation UI
-- Multi-tenant Supabase/Postgres schema
-- RLS tenant isolation foundation
-- Roles: super admin, club owner/admin/manager/staff/member
-- Membership types, members and configurable amenities
-- Vercel-ready environment setup
+Multi-tenant private-club management platform by CD7 Technologies.
 
-## Start locally
-1. `npm install`
-2. Copy `.env.example` to `.env.local`
-3. Add your Supabase URL and anon key
-4. Run `supabase/migrations/001_cluvexa_core.sql` in a NEW Supabase project
-5. `npm run dev`
+## What's live in v0.2
+- Supabase email/password login
+- Super Admin authorization through `profiles.platform_role`
+- Live clubs and member totals
+- Real organization creation
+- Club detail screen
+- Sign out
+- Multi-tenant RLS foundation from v0.1
 
-## Important
-This is the v0.1 foundation. Authentication forms and CRUD screens are intentionally not wired to production mutations until the Supabase project is connected. Do not point this migration at the existing LINDEX production database.
+## Upgrade from v0.1
+1. Stop the dev server with Control+C.
+2. Replace your local v0.1 project with this v0.2 folder (or copy your existing `.env.local` into v0.2).
+3. Ensure `.env.local` contains `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+4. Run `npm install` then `npm run dev`.
+5. Open http://localhost:3000/login and sign in with the Supabase Auth user that has `profiles.platform_role = 'super_admin'`.
 
-## Next build
-v0.2: real authentication, Super Admin club provisioning, club dashboard routing, branding, member CSV import, and permission-aware navigation.
+No additional SQL migration is required for v0.2 if `001_cluvexa_core.sql` was already run successfully.
