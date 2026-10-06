@@ -1,0 +1,2 @@
+'use client';import {useParams} from 'next/navigation';import Shell from '../../../../components/Shell';import ClubHeader from '../../../../components/ClubHeader';
+export default function Page(){const {id}=useParams<{id:string}>();return <Shell><ClubHeader id={id} title="Access" subtitle="CLUVEXA operating module"/><div className="panel"><div className="panelhead">Access</div><div className="empty moduleempty"><b>Module foundation ready.</b><br/>This area is now part of the club operating console and will use the same tenant-isolated CLUVEXA data model.</div></div></Shell>}

@@ -1,0 +1,3 @@
+'use client';
+import {useEffect,useState} from 'react';import {createClient} from '../lib/supabase/client';import ClubNav from './ClubNav';
+export default function ClubHeader({id,title,subtitle}:{id:string,title?:string,subtitle?:string}){const [club,setClub]=useState<any>();useEffect(()=>{createClient().from('clubs').select('*').eq('id',id).single().then(({data})=>setClub(data))},[id]);return <><div className="clubbrand"><div><div className="eyebrow">CLUVEXA · CLUB OPERATIONS</div><h1>{title||club?.name||'Club'}</h1><div className="muted">{subtitle||club?.name} {club&&<>· <span className="powered">Powered by CLUVEXA</span></>}</div></div>{club&&<span className="status">{club.status}</span>}</div><ClubNav id={id}/></>}
