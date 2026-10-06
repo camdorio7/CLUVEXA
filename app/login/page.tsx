@@ -38,14 +38,20 @@ function LoginContent() {
       .eq('id', data.user.id)
       .single();
 
-    if (profile?.platform_role !== 'super_admin') {
-      await sb.auth.signOut();
-      setMsg('This account is not a CLUVEXA Super Admin.');
-      setBusy(false);
+    if (profile?.platform_role === 'super_admin') {
+      router.replace('/dashboard');
+      router.refresh();
       return;
     }
 
-    router.replace('/dashboard');
+    const { data: clubUser } = await sb.from('club_users').select('club_id').eq('user_id', data.user.id).eq('active', true).limit(1).maybeSingle();
+    if (!clubUser?.club_id) {
+      await sb.auth.signOut();
+      setMsg('This account does not have an active CLUVEXA organization.');
+      setBusy(false);
+      return;
+    }
+    router.replace('/workspace/' + clubUser.club_id);
     router.refresh();
   }
 
@@ -53,8 +59,8 @@ function LoginContent() {
     <main className="loginwrap">
       <div className="loginbrand">CLUVEXA</div>
       <div className="byline dark">BY CD7 TECHNOLOGIES</div>
-      <h1>Super Admin</h1>
-      <p className="muted">Secure platform access for CD7 Technologies.</p>
+      <h1>Sign in</h1>
+      <p className="muted">Secure access for platform owners, club administrators and staff.</p>
       <form className="form loginform" onSubmit={submit}>
         <div className="field">
           <label>Email</label>
