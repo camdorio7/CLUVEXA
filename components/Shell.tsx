@@ -1,0 +1,2 @@
+import Link from 'next/link';
+export default function Shell({children}:{children:React.ReactNode}){return <div className="shell"><aside className="sidebar"><div><div className="brand">CLUVEXA</div><div className="byline">BY CD7 TECHNOLOGIES</div></div><nav className="nav"><Link href="/dashboard">Overview</Link><Link href="/clubs">Clubs</Link><Link href="/members">Members</Link><Link href="/settings">Platform Settings</Link></nav><div className="sidefoot">Super Admin Console · v0.1</div></aside><main className="main">{children}</main></div>}
