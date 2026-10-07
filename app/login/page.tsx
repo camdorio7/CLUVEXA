@@ -32,6 +32,9 @@ function LoginContent() {
       return;
     }
 
+    const next = params.get('next');
+    if (next && next.startsWith('/')) { router.replace(next); router.refresh(); return; }
+
     // Use the database security-definer helper as the authoritative platform-owner check.
     // This avoids requiring a club_users membership for CD7 Platform Owners.
     const [{ data: isSuper }, { data: profile }] = await Promise.all([
@@ -47,8 +50,10 @@ function LoginContent() {
 
     const { data: clubUser } = await sb.from('club_users').select('club_id').eq('user_id', data.user.id).eq('active', true).limit(1).maybeSingle();
     if (!clubUser?.club_id) {
-      await sb.auth.signOut();
-      setMsg('This account does not have an active NADORIO organization.');
+      const { data: requests } = await sb.rpc('my_club_join_requests');
+      const pending = (requests || []).find((r: any) => r.status === 'pending');
+      if (pending) { router.replace('/member/pending'); router.refresh(); return; }
+      setMsg('No active club access was found. You can request membership from the Join a Club page.');
       setBusy(false);
       return;
     }
@@ -73,6 +78,7 @@ function LoginContent() {
         </div>
         {msg && <div className="error">{msg}</div>}
         <button className="button" disabled={busy}>{busy ? 'Signing in…' : 'Sign In'}</button>
+        <div className="loginJoin">Member without an account? <a href="/member/join">Find your club & request access →</a></div>
       </form>
     </main>
   );
