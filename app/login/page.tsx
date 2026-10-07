@@ -66,7 +66,7 @@ function LoginContent() {
       <div className="loginbrand">NADORIO</div>
       <div className="byline dark">BY CD7 TECHNOLOGIES</div>
       <h1>Sign in</h1>
-      <p className="muted">Secure access for platform owners, club administrators and staff.</p>
+      <p className="muted">One secure sign-in for members, staff, club administrators and platform owners.</p>
       <form className="form loginform" onSubmit={submit}>
         <div className="field">
           <label>Email</label>
@@ -78,7 +78,7 @@ function LoginContent() {
         </div>
         {msg && <div className="error">{msg}</div>}
         <button className="button" disabled={busy}>{busy ? 'Signing in…' : 'Sign In'}</button>
-        <div className="loginJoin">Member without an account? <a href="/member/join">Find your club & request access →</a></div>
+        <div className="loginJoin">New to NADORIO? <a href="/member/join">Create an account & apply to your club →</a></div>
       </form>
     </main>
   );
