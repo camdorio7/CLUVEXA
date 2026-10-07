@@ -27,10 +27,12 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
   const id = params.id;
   const path = usePathname();
   const router = useRouter();
-  const [club, setClub] = useState<any>(null);
-  const [role, setRole] = useState('');
-  const [mods, setMods] = useState<any[]>([]);
-  const [ready, setReady] = useState(false);
+  const cacheKey = `nadorio:workspace:${id}`;
+  const cached = typeof window !== 'undefined' ? (() => { try { return JSON.parse(sessionStorage.getItem(cacheKey) || 'null'); } catch { return null; } })() : null;
+  const [club, setClub] = useState<any>(cached?.club || null);
+  const [role, setRole] = useState(cached?.role || '');
+  const [mods, setMods] = useState<any[]>(cached?.mods || []);
+  const [ready, setReady] = useState(Boolean(cached?.club && cached?.role));
   const [mobile, setMobile] = useState(false);
 
   useEffect(() => {
@@ -50,11 +52,11 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
       if (!c || !r || (!cu?.active && r !== 'super_admin')) { router.replace('/login?error=unauthorized'); return; }
       if (c.status !== 'active' && r !== 'super_admin') { await sb.auth.signOut(); router.replace('/login?error=club-inactive'); return; }
       const allowed = new Set((perms || []).filter((x: any) => x.can_view).map((x: any) => x.module_key));
-      setClub(c); setRole(r);
-      setMods((m || []).filter((x: any) => ['owner', 'admin', 'super_admin'].includes(r) || allowed.size === 0 || allowed.has(x.module_key)));
-      setReady(true);
+      const visibleMods = (m || []).filter((x: any) => ['owner', 'admin', 'super_admin'].includes(r) || allowed.size === 0 || allowed.has(x.module_key));
+      setClub(c); setRole(r); setMods(visibleMods); setReady(true);
+      try { sessionStorage.setItem(cacheKey, JSON.stringify({ club: c, role: r, mods: visibleMods })); } catch {}
     })();
-  }, [id, router]);
+  }, [id, router, cacheKey]);
 
   const map = useMemo(() => new Map(mods.map((x: any) => [x.module_key, x])), [mods]);
   const member = role === 'member';
@@ -62,7 +64,7 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
   const closeMobile = () => setMobile(false);
   async function out() { await createClient().auth.signOut(); router.replace('/login'); }
 
-  if (!ready || !club) return <main className="loading darkload">Loading NADORIO…</main>;
+  if (!ready || !club) return <main className="workspaceBoot" aria-label="Opening workspace" />;
 
   return (
     <div className="workspace v3workspace" style={{ '--club-primary': club.primary_color || '#138cff', '--club-accent': club.secondary_color || '#19d9e8', '--club-bg': club.background_color || '#07111f', '--club-surface': club.surface_color || '#0d1b2a', '--club-text': club.text_color || '#f4f8ff' } as React.CSSProperties}>
@@ -84,7 +86,7 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
           )}
           {admin && <div className="v3NavGroup"><span>ADMINISTRATION</span><Link className={path === `/workspace/${id}/settings` ? 'active' : ''} href={`/workspace/${id}/settings`} onClick={closeMobile}><Settings size={16} /> Club Settings</Link></div>}
         </nav>
-        <div className="sidefoot"><NadorioLogo /><div className="version">NADORIO 3.0.1 · {role.replace('_', ' ')}</div><button className="signout" onClick={out}><LogOut size={15} /> Sign out</button></div>
+        <div className="sidefoot"><NadorioLogo /><div className="version">NADORIO 3.0.2 · {role.replace('_', ' ')}</div><button className="signout" onClick={out}><LogOut size={15} /> Sign out</button></div>
       </aside>
       <main className="main clubMain v3Main">{children}</main>
       {member && <nav className="memberBottomNav"><Link href={`/workspace/${id}`}><Home /><span>Home</span></Link>{map.has('events') && <Link href={`/workspace/${id}/events`}><CalendarDays /><span>Events</span></Link>}{map.has('tee_sheet') && <Link href={`/workspace/${id}/tee-sheet`}><Clock3 /><span>Tee Times</span></Link>}{map.has('golf') && <Link href={`/workspace/${id}/golf`}><Flag /><span>Golf</span></Link>}</nav>}
