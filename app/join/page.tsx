@@ -8,7 +8,16 @@ function JoinContent(){
   const q=useSearchParams(),router=useRouter(),token=q.get('token')||'';
   const [invite,setInvite]=useState<any>();
   const [loading,setLoading]=useState(true),[name,setName]=useState(''),[email,setEmail]=useState(''),[pass,setPass]=useState(''),[msg,setMsg]=useState(''),[busy,setBusy]=useState(false);
-  useEffect(()=>{if(!token){setLoading(false);return;}createClient().from('club_invitations').select('*,clubs(name,logo_url,primary_color)').eq('token',token).eq('status','pending').maybeSingle().then(({data})=>{setInvite(data);setName(data?.full_name||'');setEmail(data?.email||'');setLoading(false)})},[token]);
+  useEffect(()=>{
+    if(!token){setLoading(false);return;}
+    const sb=createClient();
+    sb.rpc('get_public_club_invitation',{invite_token:token}).then(({data,error})=>{
+      const row=Array.isArray(data)?data[0]:data;
+      if(error||!row){setInvite(null);setLoading(false);return;}
+      const normalized={...row,clubs:{name:row.club_name,logo_url:row.club_logo_url,primary_color:row.club_primary_color}};
+      setInvite(normalized);setName(row.full_name||'');setEmail(row.email||'');setLoading(false);
+    });
+  },[token]);
   async function submit(e:FormEvent){
     e.preventDefault(); if(!invite)return; setMsg('');
     if(email.trim().toLowerCase()!==String(invite.email||'').trim().toLowerCase()){setMsg(`This invitation was sent to ${invite.email}. Please use that email address.`);return;}
