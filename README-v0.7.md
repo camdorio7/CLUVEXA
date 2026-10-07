@@ -1,4 +1,4 @@
-# CLUVEXA v0.7 — Club Onboarding & Management
+# NADORIO v0.7 — Club Onboarding & Management
 
 v0.7 turns the v0.6 permission architecture into a customer onboarding workflow.
 
@@ -13,7 +13,7 @@ v0.7 turns the v0.6 permission architecture into a customer onboarding workflow.
 - Preserves the LINDEX integration from v0.5/v0.6.
 
 ## Required SQL
-Run `supabase/migrations/005_onboarding_tee_sheet.sql` in the CLUVEXA Supabase project after 001–004.
+Run `supabase/migrations/005_onboarding_tee_sheet.sql` in the NADORIO Supabase project after 001–004.
 
 ## Important
 Club admins may configure modules only after CD7 licenses them. v0.7 provides the data model for invitations and tee bookings; automated invitation email delivery and full member tee-time booking are the next implementation layer.

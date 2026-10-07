@@ -10,7 +10,7 @@ export async function GET(req:NextRequest){
     if(!token||!clubId) return NextResponse.json({error:'Unauthorized'},{status:401});
     const url=process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-    if(!url||!key) return NextResponse.json({error:'CLUVEXA server configuration is incomplete.'},{status:503});
+    if(!url||!key) return NextResponse.json({error:'NADORIO server configuration is incomplete.'},{status:503});
     const sb=createClient(url,key,{global:{headers:{Authorization:`Bearer ${token}`}},auth:{persistSession:false}});
     const {data:user,error:userError}=await sb.auth.getUser(token);
     if(userError||!user.user) return NextResponse.json({error:'Unauthorized'},{status:401});
@@ -18,7 +18,7 @@ export async function GET(req:NextRequest){
     if(platformError||!platform) return NextResponse.json({error:'LINDEX is not connected to this organization.'},{status:403});
     const endpoint=process.env.LINDEX_INTEGRATION_URL || 'https://linderhofmembers.com/api/cluvexa-metrics';
     const secret=process.env.LINDEX_INTEGRATION_SECRET;
-    if(!secret) return NextResponse.json({connected:false,error:'LINDEX integration secret has not been configured in CLUVEXA.'},{status:503});
+    if(!secret) return NextResponse.json({connected:false,error:'LINDEX integration secret has not been configured in NADORIO.'},{status:503});
     const upstream=await fetch(endpoint,{headers:{'x-cluvexa-integration-key':secret,'accept':'application/json'},cache:'no-store'});
     const body=await upstream.json().catch(()=>({error:'Invalid response from LINDEX'}));
     if(!upstream.ok) return NextResponse.json({connected:false,error:body.error||'LINDEX did not return metrics.'},{status:502});

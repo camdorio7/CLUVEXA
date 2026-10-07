@@ -1,4 +1,4 @@
-# CLUVEXA 2.0
+# NADORIO 2.0
 Complete native club-management release.
 
 ## New/finished areas

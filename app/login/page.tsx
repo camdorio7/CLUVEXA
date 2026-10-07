@@ -14,7 +14,7 @@ function LoginContent() {
 
   useEffect(() => {
     if (params.get('error')) {
-      setMsg('This account is not authorized for the CLUVEXA Super Admin console.');
+      setMsg('This account is not authorized for the NADORIO Super Admin console.');
     }
   }, [params]);
 
@@ -48,7 +48,7 @@ function LoginContent() {
     const { data: clubUser } = await sb.from('club_users').select('club_id').eq('user_id', data.user.id).eq('active', true).limit(1).maybeSingle();
     if (!clubUser?.club_id) {
       await sb.auth.signOut();
-      setMsg('This account does not have an active CLUVEXA organization.');
+      setMsg('This account does not have an active NADORIO organization.');
       setBusy(false);
       return;
     }
@@ -58,7 +58,7 @@ function LoginContent() {
 
   return (
     <main className="loginwrap">
-      <div className="loginbrand">CLUVEXA</div>
+      <div className="loginbrand">NADORIO</div>
       <div className="byline dark">BY CD7 TECHNOLOGIES</div>
       <h1>Sign in</h1>
       <p className="muted">Secure access for platform owners, club administrators and staff.</p>
@@ -80,7 +80,7 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<main className="loginwrap"><div className="loginbrand">CLUVEXA</div><p className="muted">Loading secure access…</p></main>}>
+    <Suspense fallback={<main className="loginwrap"><div className="loginbrand">NADORIO</div><p className="muted">Loading secure access…</p></main>}>
       <LoginContent />
     </Suspense>
   );

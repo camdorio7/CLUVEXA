@@ -1,9 +1,9 @@
-# CLUVEXA v0.5 — Live LINDEX Connection
+# NADORIO v0.5 — Live LINDEX Connection
 
 This build keeps LINDEX independent and adds a read-only server-to-server connection for Linderhof's Connected Platforms page.
 
-## CLUVEXA Vercel variables
-Add these server-side variables in the CLUVEXA Vercel project:
+## NADORIO Vercel variables
+Add these server-side variables in the NADORIO Vercel project:
 - `LINDEX_INTEGRATION_URL` = `https://linderhofmembers.com/api/cluvexa-metrics`
 - `LINDEX_INTEGRATION_SECRET` = the same long random value configured in the LINDEX Vercel project
 

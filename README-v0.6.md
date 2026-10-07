@@ -1,4 +1,4 @@
-# CLUVEXA v0.6 — Platform Owner + Club Workspaces
+# NADORIO v0.6 — Platform Owner + Club Workspaces
 
 This release establishes the commercial multi-tenant hierarchy:
 
@@ -10,10 +10,10 @@ This release establishes the commercial multi-tenant hierarchy:
 - Module catalog includes Events, Tee Sheet, Golf, Access, Amenities, Staff, Time Clock, Operations, Communications, Payments, Reports and Connected Platforms
 - User/module permission foundation and audit log
 - LINDEX remains an independent connected platform for Linderhof
-- Dark blue/cyan/violet CLUVEXA design system with CD7 Technologies branding
+- Dark blue/cyan/violet NADORIO design system with CD7 Technologies branding
 
 ## Required database step
-Run `supabase/migrations/004_platform_owner_modules_permissions.sql` once in the CLUVEXA Supabase SQL Editor after deploying.
+Run `supabase/migrations/004_platform_owner_modules_permissions.sql` once in the NADORIO Supabase SQL Editor after deploying.
 
 ## Existing environment variables
 Keep the working v0.5 LINDEX integration variables unchanged.

@@ -1,4 +1,4 @@
-# CLUVEXA v1.0 — Multi-tenant Organization Platform
+# NADORIO v1.0 — Multi-tenant Organization Platform
 
 This build turns the v0.7 foundation into a full organization/account structure.
 
@@ -25,7 +25,7 @@ Do not rerun migrations 001-005 if they are already installed.
 2. Club admin invitation is created from Staff & Admins (or onboarding).
 3. Copy the generated `/join?token=...` link to the invitee.
 4. Invitee creates their own account using the invited email.
-5. CLUVEXA attaches the account to the organization and role.
+5. NADORIO attaches the account to the organization and role.
 6. Club admins can add staff and members and create their login invitations.
 
 Email delivery can be added later through Resend; the secure invitation/token/account system is already in place.

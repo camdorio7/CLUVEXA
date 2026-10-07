@@ -1,4 +1,4 @@
-# CLUVEXA v1.0.3 — Platform Owner Workspace Access
+# NADORIO v1.0.3 — Platform Owner Workspace Access
 
 Fixes Platform Owner entry into club workspaces.
 
