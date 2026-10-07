@@ -4,17 +4,9 @@ import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import {
-  ArrowRight,
-  CalendarDays,
-  CheckCircle2,
-  ClipboardCheck,
-  Clock3,
-  Sparkles,
-  UserRoundPlus,
-  UsersRound,
-  UserRound,
-  BadgeCheck,
-  BookOpen,
+  ArrowRight, BadgeCheck, CalendarDays, CheckCircle2, ClipboardCheck, Clock3,
+  Flag, Megaphone, ShieldCheck, Sparkles, UserRound, UserRoundPlus, UsersRound,
+  WalletCards, Waves, BriefcaseBusiness
 } from 'lucide-react';
 import { createClient } from '../../../lib/supabase/client';
 
@@ -24,16 +16,15 @@ export default function Page() {
   const [counts, setCounts] = useState<any>({});
   const [role, setRole] = useState('');
   const [memberRecord, setMemberRecord] = useState<any>(null);
+  const [profile, setProfile] = useState<any>(null);
   const [upcoming, setUpcoming] = useState<any[]>([]);
 
   useEffect(() => {
     (async () => {
       const sb = createClient();
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      const today = new Date(); today.setHours(0, 0, 0, 0);
       const { data: { user } } = await sb.auth.getUser();
-
-      const [clubResult, members, events, staff, checkins, tasks, pending, roleResult] = await Promise.all([
+      const [clubResult, members, events, staff, checkins, tasks, pending, roleResult, profileResult] = await Promise.all([
         sb.from('clubs').select('*').eq('id', id).single(),
         sb.from('members').select('*', { count: 'exact', head: true }).eq('club_id', id).eq('status', 'active'),
         sb.from('club_events').select('*', { count: 'exact', head: true }).eq('club_id', id).gte('starts_at', new Date().toISOString()),
@@ -41,106 +32,80 @@ export default function Page() {
         sb.from('access_log').select('*', { count: 'exact', head: true }).eq('club_id', id).gte('checked_in_at', today.toISOString()),
         sb.from('operational_tasks').select('*', { count: 'exact', head: true }).eq('club_id', id).neq('status', 'complete'),
         sb.from('member_join_requests').select('*', { count: 'exact', head: true }).eq('club_id', id).eq('status', 'pending'),
-        user
-          ? sb.from('club_users').select('role').eq('club_id', id).eq('user_id', user.id).maybeSingle()
-          : Promise.resolve({ data: null }),
+        user ? sb.from('club_users').select('role').eq('club_id', id).eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
+        user ? sb.from('profiles').select('full_name,email').eq('id', user.id).maybeSingle() : Promise.resolve({ data: null }),
       ]);
-
-      setClub(clubResult.data);
-      setCounts({
-        members: members.count,
-        events: events.count,
-        staff: staff.count,
-        checkins: checkins.count,
-        tasks: tasks.count,
-        pending: pending.count,
-      });
-      const resolvedRole = (roleResult as any).data?.role || 'admin';
-      setRole(resolvedRole);
+      setClub(clubResult.data); setProfile((profileResult as any).data);
+      setCounts({ members: members.count, events: events.count, staff: staff.count, checkins: checkins.count, tasks: tasks.count, pending: pending.count });
+      const resolvedRole = (roleResult as any).data?.role || 'admin'; setRole(resolvedRole);
+      const { data: ev } = await sb.from('club_events').select('id,title,starts_at,location').eq('club_id', id).gte('starts_at', new Date().toISOString()).order('starts_at').limit(3);
+      setUpcoming(ev || []);
       if (resolvedRole === 'member' && user) {
-        const [{ data: mr }, { data: ev }] = await Promise.all([
-          sb.from('members').select('*,membership_types(name)').eq('club_id', id).eq('profile_id', user.id).maybeSingle(),
-          sb.from('club_events').select('id,title,starts_at,location').eq('club_id', id).gte('starts_at', new Date().toISOString()).order('starts_at').limit(3),
-        ]);
-        setMemberRecord(mr); setUpcoming(ev || []);
+        const { data: mr } = await sb.from('members').select('*,membership_types(name)').eq('club_id', id).eq('profile_id', user.id).maybeSingle();
+        setMemberRecord(mr);
       }
     })();
   }, [id]);
 
   const member = role === 'member';
+  const staffUser = ['staff', 'manager'].includes(role);
+  const admin = ['owner', 'admin', 'super_admin'].includes(role);
+  const firstName = (memberRecord?.full_name || profile?.full_name || '').split(' ')[0] || (member ? 'Member' : staffUser ? 'Team' : 'Administrator');
 
-  return (
-    <>
-      <section className="adminHero">
-        <div className="adminHeroCopy">
-          <div className="eyebrow cyan">{member ? 'MEMBER HOME' : 'CLUB COMMAND CENTER'}</div>
-          <h1>{club?.name || 'Organization'}</h1>
-          <p>{club?.welcome_message || 'A clear view of your club today, with the tools you need close at hand.'}</p>
+  return <div className="portalHome">
+    <section className={`portalWelcome ${member ? 'memberWelcomeV43' : staffUser ? 'staffWelcomeV43' : 'adminWelcomeV43'}`}>
+      <div className="portalWelcomeCopy">
+        <div className="eyebrow cyan">{member ? 'YOUR CLUB' : staffUser ? 'TEAM HOME' : 'CLUB MANAGEMENT'}</div>
+        <h1>Welcome back, {firstName}.</h1>
+        <p>{club?.welcome_message || (member ? `Stay connected with ${club?.name || 'your club'}, manage your membership, and see what’s coming up.` : staffUser ? `Everything you need for today at ${club?.name || 'the club'}, right at your fingertips.` : `Run ${club?.name || 'your club'} with a clear view of members, operations, events and your team.`)}</p>
+        <div className="portalWelcomeActions">
+          {member && <><Link className="portalPrimaryAction" href={`/workspace/${id}/events`}><CalendarDays/> Explore events</Link><Link className="portalSecondaryAction" href={`/workspace/${id}/profile`}><UserRound/> My profile</Link></>}
+          {staffUser && <><Link className="portalPrimaryAction" href={`/workspace/${id}/staff`}><Clock3/> Open time clock</Link><Link className="portalSecondaryAction" href={`/workspace/${id}/operations`}><ClipboardCheck/> Today's operations</Link></>}
+          {admin && <><Link className="portalPrimaryAction" href={`/workspace/${id}/people`}><UserRoundPlus/> Review approvals</Link><Link className="portalSecondaryAction" href={`/workspace/${id}/members`}><UsersRound/> Members</Link></>}
         </div>
-        <div className="adminHeroMark">
-          <Sparkles size={16} />
-          <span>NADORIO</span>
-          <b>4.1.1</b>
-        </div>
-      </section>
+      </div>
+      <div className="portalWelcomeSide">
+        {club?.logo_url ? <img className="portalClubLogo" src={club.logo_url} alt=""/> : <div className="portalClubMonogram">{club?.name?.slice(0,2).toUpperCase() || 'N'}</div>}
+        <b>{club?.name || 'Your Club'}</b>
+        <span>{member ? memberRecord?.membership_types?.name || 'Club Member' : staffUser ? role === 'manager' ? 'Club Manager' : 'Club Staff' : 'Club Administrator'}</span>
+        <div className="portalStatus"><CheckCircle2/> {member && memberRecord?.good_standing === false ? 'Membership review needed' : 'Active'}</div>
+      </div>
+    </section>
 
-      {member ? (
-        <>
-          <div className="memberHero">
-            <section className="memberWelcome"><div className="eyebrow cyan">WELCOME BACK</div><h1>{memberRecord?.full_name || 'Member'}</h1><p>{club?.welcome_message || `Everything you need from ${club?.name || 'your club'}, all in one place.`}</p></section>
-            <aside className="memberIdentity"><div className="memberAvatar">{memberRecord?.full_name?.split(' ').map((x:string)=>x[0]).slice(0,2).join('').toUpperCase() || 'M'}</div><div><b>{memberRecord?.full_name || 'Member account'}</b><span>{memberRecord?.membership_types?.name || 'Club member'}</span><span>{memberRecord?.good_standing === false ? 'Membership review needed' : 'Good standing'}</span></div></aside>
-          </div>
-          <div className="memberQuickGrid">
-            <Link className="memberQuick" href={`/workspace/${id}/profile`}><UserRound/><div><b>My Profile</b><span>Account & membership</span></div></Link>
-            <Link className="memberQuick" href={`/workspace/${id}/events`}><CalendarDays/><div><b>Events</b><span>What’s happening</span></div></Link>
-            <Link className="memberQuick" href={`/workspace/${id}/tee-sheet`}><Clock3/><div><b>Tee Times</b><span>Club tee sheet</span></div></Link>
-            <Link className="memberQuick" href={`/workspace/${id}/directory`}><UsersRound/><div><b>Directory</b><span>Find club members</span></div></Link>
-          </div>
-        </>
-      ) : (
-        <div className="adminSummary overviewSummary">
-          <div className={`summaryCard ${counts.pending ? 'attention' : ''}`}><span className="summaryIcon"><UserRoundPlus /></span><div><small>Approvals</small><strong>{counts.pending ?? '—'}</strong><p>{counts.pending ? 'Waiting for review' : 'All caught up'}</p></div></div>
-          <div className="summaryCard"><span className="summaryIcon"><UsersRound /></span><div><small>Active members</small><strong>{counts.members ?? '—'}</strong><p>Current membership</p></div></div>
-          <div className="summaryCard"><span className="summaryIcon"><Clock3 /></span><div><small>Check-ins today</small><strong>{counts.checkins ?? '—'}</strong><p>Across club access points</p></div></div>
-          <div className="summaryCard"><span className="summaryIcon"><CalendarDays /></span><div><small>Upcoming events</small><strong>{counts.events ?? '—'}</strong><p>Scheduled ahead</p></div></div>
-        </div>
-      )}
+    {member && <>
+      <section className="portalSectionTitle"><div><span>MEMBER PORTAL</span><h2>Everything you need, all in one place.</h2></div></section>
+      <div className="portalActionGrid memberActionGrid">
+        <Link href={`/workspace/${id}/profile`}><span className="portalActionIcon"><UserRound/></span><div><b>My Profile</b><p>Membership, contact details and account settings</p></div><ArrowRight/></Link>
+        <Link href={`/workspace/${id}/events`}><span className="portalActionIcon"><CalendarDays/></span><div><b>Club Events</b><p>See what’s happening and plan your next visit</p></div><ArrowRight/></Link>
+        <Link href={`/workspace/${id}/tee-sheet`}><span className="portalActionIcon"><Clock3/></span><div><b>Tee Times</b><p>View the club tee sheet and golf schedule</p></div><ArrowRight/></Link>
+        <Link href={`/workspace/${id}/directory`}><span className="portalActionIcon"><UsersRound/></span><div><b>Member Directory</b><p>Stay connected with your club community</p></div><ArrowRight/></Link>
+        <Link href={`/workspace/${id}/access`}><span className="portalActionIcon"><WalletCards/></span><div><b>Access & Guests</b><p>Guest privileges, passes and club access</p></div><ArrowRight/></Link>
+        <Link href={`/workspace/${id}/communications`}><span className="portalActionIcon"><Megaphone/></span><div><b>Club Updates</b><p>Announcements and important club information</p></div><ArrowRight/></Link>
+      </div>
+      <div className="portalLowerGrid">
+        <section className="portalPanel"><div className="portalPanelHead"><div><span>UP NEXT</span><h2>Coming up at the club</h2></div><Link href={`/workspace/${id}/events`}>View all <ArrowRight/></Link></div>{upcoming.length ? upcoming.map(e => <Link className="portalEventRow" href={`/workspace/${id}/events`} key={e.id}><span className="eventDate"><b>{new Date(e.starts_at).toLocaleDateString(undefined,{day:'numeric'})}</b><small>{new Date(e.starts_at).toLocaleDateString(undefined,{month:'short'}).toUpperCase()}</small></span><div><b>{e.title}</b><p>{new Date(e.starts_at).toLocaleTimeString([], {hour:'numeric',minute:'2-digit'})}{e.location ? ` · ${e.location}` : ''}</p></div><ArrowRight/></Link>) : <div className="portalEmpty"><CalendarDays/><b>Nothing scheduled yet</b><span>New club events will appear here.</span></div>}</section>
+        <aside className="portalPanel membershipSpotlight"><span>MY MEMBERSHIP</span><BadgeCheck/><h2>{memberRecord?.membership_types?.name || 'Club Member'}</h2><p>{memberRecord?.member_number ? `Member #${memberRecord.member_number}` : 'Your membership information is available in your profile.'}</p><div className="membershipGood"><CheckCircle2/> {memberRecord?.good_standing === false ? 'Review needed' : 'Good standing'}</div><Link href={`/workspace/${id}/profile`}>View membership <ArrowRight/></Link></aside>
+      </div>
+    </>}
 
+    {staffUser && <>
+      <section className="portalSectionTitle"><div><span>YOUR WORKDAY</span><h2>Quick access to the tools your team uses most.</h2></div></section>
+      <div className="portalActionGrid staffActionGrid">
+        <Link href={`/workspace/${id}/staff`}><span className="portalActionIcon"><Clock3/></span><div><b>Time Clock</b><p>Clock in or out and review recent time entries</p></div><ArrowRight/></Link>
+        <Link href={`/workspace/${id}/operations`}><span className="portalActionIcon"><ClipboardCheck/></span><div><b>Operations</b><p>{counts.tasks ? `${counts.tasks} open tasks need attention` : 'Daily tasks and club operations'}</p></div><ArrowRight/></Link>
+        <Link href={`/workspace/${id}/events`}><span className="portalActionIcon"><CalendarDays/></span><div><b>Events</b><p>{counts.events || 0} upcoming club events</p></div><ArrowRight/></Link>
+        <Link href={`/workspace/${id}/access`}><span className="portalActionIcon"><ShieldCheck/></span><div><b>Access & Guests</b><p>{counts.checkins || 0} check-ins recorded today</p></div><ArrowRight/></Link>
+        <Link href={`/workspace/${id}/tee-sheet`}><span className="portalActionIcon"><Flag/></span><div><b>Tee Sheet</b><p>View today’s golf activity and tee times</p></div><ArrowRight/></Link>
+        <Link href={`/workspace/${id}/communications`}><span className="portalActionIcon"><Megaphone/></span><div><b>Club Updates</b><p>Stay current on announcements and notices</p></div><ArrowRight/></Link>
+      </div>
+      <div className="portalLowerGrid"><section className="portalPanel"><div className="portalPanelHead"><div><span>TODAY</span><h2>At a glance</h2></div></div><div className="portalMetricRows"><div><Clock3/><span>Check-ins today</span><b>{counts.checkins ?? '—'}</b></div><div><ClipboardCheck/><span>Open tasks</span><b>{counts.tasks ?? '—'}</b></div><div><CalendarDays/><span>Upcoming events</span><b>{counts.events ?? '—'}</b></div></div></section><aside className="portalPanel teamCard"><BriefcaseBusiness/><span>TEAM ACCESS</span><h2>{role === 'manager' ? 'Manager workspace' : 'Staff workspace'}</h2><p>Your tools are based on the permissions assigned by your club administrator.</p><Link href={`/workspace/${id}/staff`}>Open staff center <ArrowRight/></Link></aside></div>
+    </>}
 
-      {member && <div className="memberContentGrid"><section className="memberPanel"><div className="memberPanelHead"><h2>Coming up</h2><Link href={`/workspace/${id}/events`}>View all</Link></div>{upcoming.length?upcoming.map(e=><div className="memberListItem" key={e.id}><div><b>{e.title}</b><p>{new Date(e.starts_at).toLocaleString()} {e.location?`· ${e.location}`:''}</p></div><ArrowRight size={16}/></div>):<div className="memberListItem"><div><b>No upcoming events</b><p>New club events will appear here.</p></div></div>}</section><aside className="memberPanel"><div className="memberPanelHead"><h2>Membership</h2></div><div className="memberListItem"><div><b>{memberRecord?.membership_types?.name||'Club member'}</b><p>{memberRecord?.member_number?`Member #${memberRecord.member_number}`:'Member number not assigned'}</p></div><BadgeCheck size={18}/></div><div className="memberListItem"><Link href={`/workspace/${id}/profile`}>View profile & membership</Link><ArrowRight size={16}/></div></aside></div>}
-
-      {!member && <div className="adminHomeGrid">
-        <section className="v3Section">
-          <div className="v3SectionHead">
-            <div>
-              <h2>{member ? 'Your club' : 'What needs attention'}</h2>
-              <p>{member ? 'Everything you need from your club in one place.' : 'Simple shortcuts to the most common management tasks.'}</p>
-            </div>
-          </div>
-          <div className="adminActionList">
-            {member ? (
-              <>
-                <Link href={`/workspace/${id}/events`}><span className="actionIcon"><CalendarDays /></span><div><b>Events</b><small>See upcoming club events</small></div><ArrowRight /></Link>
-                <Link href={`/workspace/${id}/tee-sheet`}><span className="actionIcon"><Clock3 /></span><div><b>Tee Sheet</b><small>View club tee times</small></div><ArrowRight /></Link>
-              </>
-            ) : (
-              <>
-                <Link href={`/workspace/${id}/people`}><span className="actionIcon"><UserRoundPlus /></span><div><b>People & Approvals</b><small>{counts.pending ? `${counts.pending} membership ${counts.pending === 1 ? 'application' : 'applications'} waiting` : 'No applications waiting'}</small></div><ArrowRight /></Link>
-                <Link href={`/workspace/${id}/memberships`}><span className="actionIcon"><UsersRound /></span><div><b>Membership Levels</b><small>Manage plans available during signup</small></div><ArrowRight /></Link>
-                <Link href={`/workspace/${id}/operations`}><span className="actionIcon"><ClipboardCheck /></span><div><b>Operations</b><small>{counts.tasks ? `${counts.tasks} open ${counts.tasks === 1 ? 'task' : 'tasks'}` : 'No open tasks'}</small></div><ArrowRight /></Link>
-              </>
-            )}
-          </div>
-        </section>
-
-        <aside className="v3Section adminStatus">
-          <div className="v3SectionHead"><div><h2>Club status</h2><p>At-a-glance system health</p></div></div>
-          <div className="statusLine"><span>Organization</span><b className="status"><CheckCircle2 size={13} />{club?.status || 'Active'}</b></div>
-          <div className="statusLine"><span>NADORIO platform</span><b className="status"><CheckCircle2 size={13} />Operational</b></div>
-          {!member && <div className="statusLine"><span>Team accounts</span><b>{counts.staff ?? 0}</b></div>}
-          <div className="statusLine"><span>Workspace</span><b>Up to date</b></div>
-        </aside>
-      </div>}
-    </>
-  );
+    {admin && <>
+      <div className="portalMetricGrid"><div><span className="metricIcon"><UserRoundPlus/></span><div><small>Pending approvals</small><strong>{counts.pending ?? '—'}</strong><p>{counts.pending ? 'Waiting for your review' : 'All caught up'}</p></div></div><div><span className="metricIcon"><UsersRound/></span><div><small>Active members</small><strong>{counts.members ?? '—'}</strong><p>Current club membership</p></div></div><div><span className="metricIcon"><Clock3/></span><div><small>Today's check-ins</small><strong>{counts.checkins ?? '—'}</strong><p>Club activity today</p></div></div><div><span className="metricIcon"><CalendarDays/></span><div><small>Upcoming events</small><strong>{counts.events ?? '—'}</strong><p>On the club calendar</p></div></div></div>
+      <section className="portalSectionTitle"><div><span>MANAGE YOUR CLUB</span><h2>Common tasks, one click away.</h2></div></section>
+      <div className="portalActionGrid adminActionGrid"><Link href={`/workspace/${id}/people`}><span className="portalActionIcon"><UserRoundPlus/></span><div><b>People & Approvals</b><p>{counts.pending ? `${counts.pending} applications waiting for review` : 'Manage access and member applications'}</p></div><ArrowRight/></Link><Link href={`/workspace/${id}/members`}><span className="portalActionIcon"><UsersRound/></span><div><b>Member Directory</b><p>View and manage your active membership</p></div><ArrowRight/></Link><Link href={`/workspace/${id}/memberships`}><span className="portalActionIcon"><WalletCards/></span><div><b>Membership Levels</b><p>Plans, pricing and membership access</p></div><ArrowRight/></Link><Link href={`/workspace/${id}/operations`}><span className="portalActionIcon"><ClipboardCheck/></span><div><b>Operations</b><p>{counts.tasks ? `${counts.tasks} open tasks` : 'Daily operations and tasks'}</p></div><ArrowRight/></Link><Link href={`/workspace/${id}/staff`}><span className="portalActionIcon"><BriefcaseBusiness/></span><div><b>Staff & Team</b><p>{counts.staff || 0} team accounts</p></div><ArrowRight/></Link><Link href={`/workspace/${id}/events`}><span className="portalActionIcon"><CalendarDays/></span><div><b>Events</b><p>Plan and manage the club calendar</p></div><ArrowRight/></Link></div>
+      <div className="portalLowerGrid"><section className="portalPanel"><div className="portalPanelHead"><div><span>ATTENTION</span><h2>What needs you today</h2></div></div><Link className="portalAttentionRow" href={`/workspace/${id}/people`}><UserRoundPlus/><div><b>Membership applications</b><p>{counts.pending ? `${counts.pending} waiting for review` : 'No applications waiting'}</p></div><ArrowRight/></Link><Link className="portalAttentionRow" href={`/workspace/${id}/operations`}><ClipboardCheck/><div><b>Operational tasks</b><p>{counts.tasks ? `${counts.tasks} tasks still open` : 'No open tasks'}</p></div><ArrowRight/></Link></section><aside className="portalPanel clubHealth"><Sparkles/><span>CLUB WORKSPACE</span><h2>Everything is connected.</h2><p>NADORIO keeps your members, staff, events and operations together in one club workspace.</p><div className="membershipGood"><CheckCircle2/> Platform operational</div></aside></div>
+    </>}
+  </div>;
 }
