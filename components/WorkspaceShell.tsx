@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
-import { CalendarDays, ClipboardList, Clock3, Flag, Home, LogOut, Menu, MessageSquare, Settings, ShieldCheck, UsersRound, X } from 'lucide-react';
+import { CalendarDays, Clock3, Flag, Home, LogOut, Menu, Settings, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import NadorioLogo from './NadorioLogo';
 
@@ -79,7 +79,7 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
         <nav className="nav v3Nav">
           <Link className={`v3NavHome ${path === `/workspace/${id}` ? 'active' : ''}`} href={`/workspace/${id}`} onClick={closeMobile}><Home size={18} /> Home</Link>
           {member ? (
-            <div className="v3NavGroup"><span>MY CLUB</span>{['events', 'tee_sheet', 'amenities', 'communications'].filter(k => map.has(k)).map(k => { const [s, l] = defs[k]; return <Link key={k} className={path === `/workspace/${id}${s}` ? 'active' : ''} href={`/workspace/${id}${s}`} onClick={closeMobile}>{l}</Link>; })}</div>
+            <><div className="v3NavGroup"><span>MY ACCOUNT</span><Link className={path === `/workspace/${id}/profile` ? 'active' : ''} href={`/workspace/${id}/profile`} onClick={closeMobile}><UserRound size={16}/> My Profile</Link><Link className={path === `/workspace/${id}/directory` ? 'active' : ''} href={`/workspace/${id}/directory`} onClick={closeMobile}><UsersRound size={16}/> Member Directory</Link></div><div className="v3NavGroup"><span>MY CLUB</span>{['events', 'tee_sheet', 'amenities', 'communications'].filter(k => map.has(k)).map(k => { const [s, l] = defs[k]; return <Link key={k} className={path === `/workspace/${id}${s}` ? 'active' : ''} href={`/workspace/${id}${s}`} onClick={closeMobile}>{l}</Link>; })}</div></>
           ) : (
             <>
               {admin && <div className="v3NavGroup"><span>MEMBER MANAGEMENT</span><Link className={path === `/workspace/${id}/people` ? 'active' : ''} href={`/workspace/${id}/people`} onClick={closeMobile}><ShieldCheck size={16} /> People & Approvals</Link></div>}
@@ -88,10 +88,10 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
           )}
           {admin && <div className="v3NavGroup"><span>ADMINISTRATION</span><Link className={path === `/workspace/${id}/settings` ? 'active' : ''} href={`/workspace/${id}/settings`} onClick={closeMobile}><Settings size={16} /> Club Settings</Link></div>}
         </nav>
-        <div className="sidefoot"><NadorioLogo /><div className="version">NADORIO 4.0 · {role.replace('_', ' ')}</div><button className="signout" onClick={out}><LogOut size={15} /> Sign out</button></div>
+        <div className="sidefoot"><NadorioLogo /><div className="version">NADORIO 4.2 · {role.replace('_', ' ')}</div><button className="signout" onClick={out}><LogOut size={15} /> Sign out</button></div>
       </aside>
       <main className="main clubMain v3Main">{children}</main>
-      {member && <nav className="memberBottomNav"><Link href={`/workspace/${id}`}><Home /><span>Home</span></Link>{map.has('events') && <Link href={`/workspace/${id}/events`}><CalendarDays /><span>Events</span></Link>}{map.has('tee_sheet') && <Link href={`/workspace/${id}/tee-sheet`}><Clock3 /><span>Tee Times</span></Link>}{map.has('golf') && <Link href={`/workspace/${id}/golf`}><Flag /><span>Golf</span></Link>}</nav>}
+      {member && <nav className="memberBottomNav"><Link href={`/workspace/${id}`}><Home /><span>Home</span></Link><Link href={`/workspace/${id}/profile`}><UserRound/><span>Profile</span></Link>{map.has('events') && <Link href={`/workspace/${id}/events`}><CalendarDays /><span>Events</span></Link>}{map.has('tee_sheet') && <Link href={`/workspace/${id}/tee-sheet`}><Clock3 /><span>Tee Times</span></Link>}{map.has('golf') && <Link href={`/workspace/${id}/golf`}><Flag /><span>Golf</span></Link>}</nav>}
     </div>
   );
 }

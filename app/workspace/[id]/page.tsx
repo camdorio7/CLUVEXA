@@ -12,6 +12,9 @@ import {
   Sparkles,
   UserRoundPlus,
   UsersRound,
+  UserRound,
+  BadgeCheck,
+  BookOpen,
 } from 'lucide-react';
 import { createClient } from '../../../lib/supabase/client';
 
@@ -20,6 +23,8 @@ export default function Page() {
   const [club, setClub] = useState<any>();
   const [counts, setCounts] = useState<any>({});
   const [role, setRole] = useState('');
+  const [memberRecord, setMemberRecord] = useState<any>(null);
+  const [upcoming, setUpcoming] = useState<any[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -50,7 +55,15 @@ export default function Page() {
         tasks: tasks.count,
         pending: pending.count,
       });
-      setRole((roleResult as any).data?.role || 'admin');
+      const resolvedRole = (roleResult as any).data?.role || 'admin';
+      setRole(resolvedRole);
+      if (resolvedRole === 'member' && user) {
+        const [{ data: mr }, { data: ev }] = await Promise.all([
+          sb.from('members').select('*,membership_types(name)').eq('club_id', id).eq('profile_id', user.id).maybeSingle(),
+          sb.from('club_events').select('id,title,starts_at,location').eq('club_id', id).gte('starts_at', new Date().toISOString()).order('starts_at').limit(3),
+        ]);
+        setMemberRecord(mr); setUpcoming(ev || []);
+      }
     })();
   }, [id]);
 
@@ -72,38 +85,31 @@ export default function Page() {
       </section>
 
       {member ? (
-        <div className="adminSummary memberSummary">
-          <div className="summaryCard">
-            <span className="summaryIcon"><CalendarDays /></span>
-            <div><small>Upcoming events</small><strong>{counts.events ?? '—'}</strong><p>On the club calendar</p></div>
+        <>
+          <div className="memberHero">
+            <section className="memberWelcome"><div className="eyebrow cyan">WELCOME BACK</div><h1>{memberRecord?.full_name || 'Member'}</h1><p>{club?.welcome_message || `Everything you need from ${club?.name || 'your club'}, all in one place.`}</p></section>
+            <aside className="memberIdentity"><div className="memberAvatar">{memberRecord?.full_name?.split(' ').map((x:string)=>x[0]).slice(0,2).join('').toUpperCase() || 'M'}</div><div><b>{memberRecord?.full_name || 'Member account'}</b><span>{memberRecord?.membership_types?.name || 'Club member'}</span><span>{memberRecord?.good_standing === false ? 'Membership review needed' : 'Good standing'}</span></div></aside>
           </div>
-          <div className="summaryCard">
-            <span className="summaryIcon"><Clock3 /></span>
-            <div><small>Today's activity</small><strong>{counts.checkins ?? '—'}</strong><p>Club check-ins</p></div>
+          <div className="memberQuickGrid">
+            <Link className="memberQuick" href={`/workspace/${id}/profile`}><UserRound/><div><b>My Profile</b><span>Account & membership</span></div></Link>
+            <Link className="memberQuick" href={`/workspace/${id}/events`}><CalendarDays/><div><b>Events</b><span>What’s happening</span></div></Link>
+            <Link className="memberQuick" href={`/workspace/${id}/tee-sheet`}><Clock3/><div><b>Tee Times</b><span>Club tee sheet</span></div></Link>
+            <Link className="memberQuick" href={`/workspace/${id}/directory`}><UsersRound/><div><b>Directory</b><span>Find club members</span></div></Link>
           </div>
-        </div>
+        </>
       ) : (
         <div className="adminSummary overviewSummary">
-          <div className={`summaryCard ${counts.pending ? 'attention' : ''}`}>
-            <span className="summaryIcon"><UserRoundPlus /></span>
-            <div><small>Approvals</small><strong>{counts.pending ?? '—'}</strong><p>{counts.pending ? 'Waiting for review' : 'All caught up'}</p></div>
-          </div>
-          <div className="summaryCard">
-            <span className="summaryIcon"><UsersRound /></span>
-            <div><small>Active members</small><strong>{counts.members ?? '—'}</strong><p>Current membership</p></div>
-          </div>
-          <div className="summaryCard">
-            <span className="summaryIcon"><Clock3 /></span>
-            <div><small>Check-ins today</small><strong>{counts.checkins ?? '—'}</strong><p>Across club access points</p></div>
-          </div>
-          <div className="summaryCard">
-            <span className="summaryIcon"><CalendarDays /></span>
-            <div><small>Upcoming events</small><strong>{counts.events ?? '—'}</strong><p>Scheduled ahead</p></div>
-          </div>
+          <div className={`summaryCard ${counts.pending ? 'attention' : ''}`}><span className="summaryIcon"><UserRoundPlus /></span><div><small>Approvals</small><strong>{counts.pending ?? '—'}</strong><p>{counts.pending ? 'Waiting for review' : 'All caught up'}</p></div></div>
+          <div className="summaryCard"><span className="summaryIcon"><UsersRound /></span><div><small>Active members</small><strong>{counts.members ?? '—'}</strong><p>Current membership</p></div></div>
+          <div className="summaryCard"><span className="summaryIcon"><Clock3 /></span><div><small>Check-ins today</small><strong>{counts.checkins ?? '—'}</strong><p>Across club access points</p></div></div>
+          <div className="summaryCard"><span className="summaryIcon"><CalendarDays /></span><div><small>Upcoming events</small><strong>{counts.events ?? '—'}</strong><p>Scheduled ahead</p></div></div>
         </div>
       )}
 
-      <div className="adminHomeGrid">
+
+      {member && <div className="memberContentGrid"><section className="memberPanel"><div className="memberPanelHead"><h2>Coming up</h2><Link href={`/workspace/${id}/events`}>View all</Link></div>{upcoming.length?upcoming.map(e=><div className="memberListItem" key={e.id}><div><b>{e.title}</b><p>{new Date(e.starts_at).toLocaleString()} {e.location?`· ${e.location}`:''}</p></div><ArrowRight size={16}/></div>):<div className="memberListItem"><div><b>No upcoming events</b><p>New club events will appear here.</p></div></div>}</section><aside className="memberPanel"><div className="memberPanelHead"><h2>Membership</h2></div><div className="memberListItem"><div><b>{memberRecord?.membership_types?.name||'Club member'}</b><p>{memberRecord?.member_number?`Member #${memberRecord.member_number}`:'Member number not assigned'}</p></div><BadgeCheck size={18}/></div><div className="memberListItem"><Link href={`/workspace/${id}/profile`}>View profile & membership</Link><ArrowRight size={16}/></div></aside></div>}
+
+      {!member && <div className="adminHomeGrid">
         <section className="v3Section">
           <div className="v3SectionHead">
             <div>
@@ -134,7 +140,7 @@ export default function Page() {
           {!member && <div className="statusLine"><span>Team accounts</span><b>{counts.staff ?? 0}</b></div>}
           <div className="statusLine"><span>Workspace</span><b>Up to date</b></div>
         </aside>
-      </div>
+      </div>}
     </>
   );
 }
