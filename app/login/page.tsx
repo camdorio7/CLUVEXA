@@ -32,13 +32,14 @@ function LoginContent() {
       return;
     }
 
-    const { data: profile } = await sb
-      .from('profiles')
-      .select('platform_role')
-      .eq('id', data.user.id)
-      .single();
+    // Use the database security-definer helper as the authoritative platform-owner check.
+    // This avoids requiring a club_users membership for CD7 Platform Owners.
+    const [{ data: isSuper }, { data: profile }] = await Promise.all([
+      sb.rpc('is_super_admin'),
+      sb.from('profiles').select('platform_role').eq('id', data.user.id).maybeSingle(),
+    ]);
 
-    if (profile?.platform_role === 'super_admin') {
+    if (isSuper === true || profile?.platform_role === 'super_admin') {
       router.replace('/dashboard');
       router.refresh();
       return;
