@@ -29,3 +29,6 @@ See `README-v0.7.md`. Run migration `005_onboarding_tee_sheet.sql` after deployi
 
 ## v0.7
 See `README-v0.7.md`. Run migration `005_onboarding_tee_sheet.sql` after deploying.
+
+## v1.0.3.2
+Platform Owner identity/access repair. Run only `supabase/migrations/007_platform_owner_access.sql` after 006, then sign out and back in.
