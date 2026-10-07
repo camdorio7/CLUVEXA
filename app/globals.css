@@ -24,3 +24,8 @@
 
 /* v3.0.2: navigation keeps the workspace shell visually stable while auth/club data refreshes. */
 .workspaceBoot{min-height:100svh;background:#07111f}
+
+/* v3.0.4 navigation: instant cached chrome + subtle content transition */
+.routeContent,.v3Main{animation:nadorioRouteIn .14s ease-out both}
+@keyframes nadorioRouteIn{from{opacity:.82;transform:translateY(2px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.routeContent,.v3Main{animation:none}}
