@@ -29,3 +29,153 @@
 .routeContent,.v3Main{animation:nadorioRouteIn .14s ease-out both}
 @keyframes nadorioRouteIn{from{opacity:.82;transform:translateY(2px)}to{opacity:1;transform:none}}
 @media (prefers-reduced-motion:reduce){.routeContent,.v3Main{animation:none}}
+
+/* =========================================================
+   NADORIO 4.0 — unified LINDEX-inspired control system
+   Consistent geometry across owner, admin, manager and member UI.
+   ========================================================= */
+:root{
+  --n4-control-h:42px;
+  --n4-control-r:10px;
+  --n4-card-r:14px;
+  --n4-gap:14px;
+  --n4-row-h:58px;
+}
+
+/* Controls: one predictable size everywhere */
+.button,.approveButton,.declineButton,.dangerButton,.fileButton,.toggle,
+.workspace button:not(.textDanger):not(.textButton):not(.signout):not(.backLink):not(.clubChoice),
+.shell button:not(.signout):not(.textDanger):not(.textButton){
+  min-height:var(--n4-control-h);
+  padding:0 15px;
+  border-radius:var(--n4-control-r);
+  font-size:13px;
+  line-height:1;
+  font-weight:700;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:7px;
+  white-space:nowrap;
+}
+.button.small{min-height:36px;padding:0 12px;font-size:12px}
+.button svg,.approveButton svg,.declineButton svg,.dangerButton svg{width:16px;height:16px;flex:0 0 auto}
+.button:active,.approveButton:active,.declineButton:active,.dangerButton:active{transform:translateY(1px)}
+
+/* Forms: LINDEX-like compact, aligned fields */
+.field{gap:7px;margin-bottom:14px}
+.field input,.field select,.field textarea,
+.inlineForm input,.inlineForm select,.inlineForm textarea,
+.settingsBody input,.settingsBody select,.settingsBody textarea,
+.memberJoinForm input,.memberJoinForm select,.memberJoinForm textarea{
+  min-height:var(--n4-control-h);
+  padding:9px 12px;
+  border-radius:var(--n4-control-r);
+  font-size:14px;
+  line-height:1.35;
+}
+textarea,.field textarea,.memberJoinForm textarea{min-height:92px}
+.inlineForm{display:flex;flex-wrap:wrap;align-items:end;gap:10px;padding:16px 18px}
+.inlineForm>input,.inlineForm>select{flex:1 1 160px;max-width:260px}
+.inlineForm>.button{flex:0 0 auto}
+
+/* Panels and cards share one proportion system */
+.panel,.card,.statCard,.clubTile,.v3Section,.clubChooser,.memberJoinForm,.selectedClub,.pendingCard{
+  border-radius:var(--n4-card-r);
+}
+.panel{margin-top:18px}
+.panelhead,.v3SectionHead{min-height:58px;padding:14px 18px;display:flex;align-items:center}
+.settingsBody{padding:18px}
+.cards,.statGrid,.clubGrid,.v3HomeGrid,.modulegrid,.settingsGrid{gap:var(--n4-gap)}
+.card,.statCard{min-height:108px;padding:16px 18px}
+.metric{font-size:27px}
+.modulegrid{padding:16px}
+.module{min-height:66px;padding:13px 15px;border-radius:12px}
+
+/* Rows no longer jump between random heights */
+.datarow,.simpleRow,.peopleRow,.statusLine,.clubrow{min-height:var(--n4-row-h)}
+.datarow{padding:11px 18px}
+.simpleRow,.peopleRow,.statusLine{padding:11px 18px}
+.clubrow{padding:12px 18px}
+.approvalRow{min-height:70px;padding:12px 4px}
+.approvalActions{align-items:center}
+.approveButton,.declineButton{min-width:92px}
+
+/* Page rhythm */
+.main,.v3Main{font-size:14px}
+.top,.v3PageHead{margin-bottom:18px}
+.top h1,.v3PageHead h1{font-size:29px;line-height:1.12;letter-spacing:-.45px}
+.v3Main{padding:30px 34px 64px}
+.v3Hero{border-radius:16px;padding:24px}
+.v3Hero h1{font-size:30px}
+.v3HeroBadge{min-height:32px;display:flex;align-items:center;padding:0 11px}
+.v3Metrics{gap:var(--n4-gap);margin-top:14px}
+.v3Metrics .metric{min-height:112px;border-radius:var(--n4-card-r);padding:16px}
+.v3HomeGrid{margin-top:14px}
+.v3Section{margin-top:14px}
+.quickGrid{padding:14px;gap:10px}
+.quickGrid a{min-height:68px;padding:12px;border-radius:11px;transition:border-color .15s ease,background .15s ease,transform .15s ease}
+.quickGrid a:hover{transform:translateY(-1px);border-color:color-mix(in srgb,var(--club-primary,#138cff) 45%,transparent)}
+
+/* Admin / Platform Owner cards use the same dimensions */
+.ownerHero{border-radius:16px;padding:24px}
+.ownerHero .nadorioLogo strong{font-size:38px}
+.clubTile{min-height:106px;padding:16px}
+.clubLogo{width:52px;height:52px;border-radius:11px}
+.clubLogo.large{width:64px;height:64px}
+.platformHero{border-radius:16px;padding:20px}
+.platformHero.large{padding:24px}
+.platformMark{width:52px;height:52px;border-radius:12px}
+.platformActions{align-items:center}
+
+/* Navigation gets LINDEX-style compact targets */
+.nav a,.sideGroup a,.v3NavHome,.v3NavGroup a{min-height:40px;padding:0 12px!important;border-radius:9px!important}
+.v3NavGroup{margin-top:18px}
+.v3NavGroup>span{padding-bottom:6px}
+.v3Sidebar{width:280px;padding:18px 14px}
+.v3Main{margin-left:280px}
+.v3Sidebar .clubBrand{min-height:58px;padding:6px}
+.v3Sidebar .clubBrand img,.v3Sidebar .clubMark{width:40px;height:40px}
+.v3Sidebar .sidefoot{border-radius:11px}
+
+/* Settings/admin manager: stop controls and boxes from stretching awkwardly */
+.settingsGrid{grid-template-columns:minmax(0,1.35fr) minmax(280px,.75fr)}
+.colorPair{gap:10px}
+.brandEditor{min-height:88px;margin-bottom:18px}
+.lifecycle>div{align-items:center;gap:12px}
+.teeSettings{gap:10px}
+.checkRow{min-height:42px}
+.status,.chip,.requestBadge{min-height:24px;display:inline-flex;align-items:center;padding:0 9px}
+
+/* Member enrollment follows the same component proportions */
+.clubChoice{min-height:72px;border-radius:12px;padding:11px 13px}
+.clubChoiceLogo{width:44px;height:44px;border-radius:10px}
+.memberJoinForm{padding:22px;gap:13px}
+.selectedClub{padding:22px}
+.searchBox{min-height:var(--n4-control-h);border-radius:var(--n4-control-r)}
+.searchBox input{min-height:40px;padding:8px 0}
+.pendingCard{padding:28px}
+
+/* Responsive geometry */
+@media(max-width:1000px){
+  .settingsGrid{grid-template-columns:1fr}
+  .inlineForm>input,.inlineForm>select{max-width:none}
+}
+@media(max-width:900px){
+  .v3Sidebar{width:min(300px,88vw)}
+  .v3Main{margin-left:0;padding:82px 14px 82px}
+  .v3Hero{padding:19px}
+  .v3Hero h1,.v3PageHead h1{font-size:26px}
+  .panelhead,.v3SectionHead{padding:13px 15px}
+  .datarow,.simpleRow,.peopleRow,.statusLine{padding-left:15px;padding-right:15px}
+  .inlineForm{padding:14px 15px}
+}
+@media(max-width:520px){
+  .button,.approveButton,.declineButton,.dangerButton,.fileButton{min-height:42px}
+  .approvalActions{grid-template-columns:1fr 1fr;width:100%}
+  .approveButton,.declineButton{width:100%}
+  .inlineForm{display:grid;grid-template-columns:1fr}
+  .inlineForm>input,.inlineForm>select,.inlineForm>.button{width:100%;max-width:none}
+  .top{align-items:flex-start;gap:12px;flex-direction:column}
+  .top>.button{width:100%}
+}
