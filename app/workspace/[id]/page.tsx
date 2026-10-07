@@ -9,6 +9,7 @@ import {
   WalletCards, Waves, BriefcaseBusiness
 } from 'lucide-react';
 import { createClient } from '../../../lib/supabase/client';
+import CommandCenter from '../../../components/CommandCenter';
 
 export default function Page() {
   const { id } = useParams<{ id: string }>();
@@ -60,7 +61,9 @@ export default function Page() {
         <p>{club?.welcome_message || (member ? `Stay connected with ${club?.name || 'your club'}, manage your membership, and see what’s coming up.` : staffUser ? `Everything you need for today at ${club?.name || 'the club'}, right at your fingertips.` : `Run ${club?.name || 'your club'} with a clear view of members, operations, events and your team.`)}</p>
         <div className="portalWelcomeActions">
           {member && <><Link className="portalPrimaryAction" href={`/workspace/${id}/events`}><CalendarDays/> Explore events</Link><Link className="portalSecondaryAction" href={`/workspace/${id}/profile`}><UserRound/> My profile</Link></>}
-          {staffUser && <><Link className="portalPrimaryAction" href={`/workspace/${id}/staff`}><Clock3/> Open time clock</Link><Link className="portalSecondaryAction" href={`/workspace/${id}/operations`}><ClipboardCheck/> Today's operations</Link></>}
+          {admin && <CommandCenter id={id} role={role}/>}
+
+    {staffUser && <><Link className="portalPrimaryAction" href={`/workspace/${id}/staff`}><Clock3/> Open time clock</Link><Link className="portalSecondaryAction" href={`/workspace/${id}/operations`}><ClipboardCheck/> Today's operations</Link></>}
           {admin && <><Link className="portalPrimaryAction" href={`/workspace/${id}/people`}><UserRoundPlus/> Review approvals</Link><Link className="portalSecondaryAction" href={`/workspace/${id}/members`}><UsersRound/> Members</Link></>}
         </div>
       </div>
@@ -87,6 +90,8 @@ export default function Page() {
         <aside className="portalPanel membershipSpotlight"><span>MY MEMBERSHIP</span><BadgeCheck/><h2>{memberRecord?.membership_types?.name || 'Club Member'}</h2><p>{memberRecord?.member_number ? `Member #${memberRecord.member_number}` : 'Your membership information is available in your profile.'}</p><div className="membershipGood"><CheckCircle2/> {memberRecord?.good_standing === false ? 'Review needed' : 'Good standing'}</div><Link href={`/workspace/${id}/profile`}>View membership <ArrowRight/></Link></aside>
       </div>
     </>}
+
+    {admin && <CommandCenter id={id} role={role}/>}
 
     {staffUser && <>
       <section className="portalSectionTitle"><div><span>YOUR WORKDAY</span><h2>Quick access to the tools your team uses most.</h2></div></section>
