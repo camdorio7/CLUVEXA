@@ -12,14 +12,14 @@ const defs: Record<string, [string, string]> = {
   amenities: ['/amenities', 'Amenities'], access: ['/access', 'Access & Guests'], events: ['/events', 'Events'],
   tee_sheet: ['/tee-sheet', 'Tee Sheet'], golf: ['/golf', 'Golf & Tournaments'], staff: ['/staff', 'Staff'],
   operations: ['/operations', 'Operations'], communications: ['/communications', 'Communications'], reports: ['/reports', 'Reports'],
-  connected_platforms: ['/platforms', 'Connected Platforms'], documents: ['/documents','Documents'], reservations: ['/reservations','Reservations'], automations: ['/automations','Automations'], intelligence: ['/intelligence','Intelligence'],
+  website_management: ['/website', 'Website Management'], connected_platforms: ['/platforms', 'Connected Platforms'], documents: ['/documents','Documents'], reservations: ['/reservations','Reservations'], automations: ['/automations','Automations'], intelligence: ['/intelligence','Intelligence'],
 };
 
 const groups = [
   { label: 'Membership', keys: ['members', 'memberships', 'access'] },
   { label: 'Club Life', keys: ['events', 'amenities', 'tee_sheet', 'golf'] },
   { label: 'Team & Operations', keys: ['staff', 'operations'] },
-  { label: 'Engage & Insights', keys: ['communications', 'documents', 'reports', 'intelligence', 'connected_platforms'] },
+  { label: 'Engage & Insights', keys: ['communications', 'documents', 'reports', 'intelligence', 'connected_platforms', 'website_management'] },
   { label: 'Platform', keys: ['reservations', 'automations'] },
 ];
 
@@ -37,7 +37,7 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
   const [mobile, setMobile] = useState(false);
 
   useEffect(() => {
-    const destinations = ['', '/people', '/members', '/memberships', '/access', '/events', '/amenities', '/tee-sheet', '/golf', '/staff', '/operations', '/communications', '/documents', '/reservations', '/automations', '/intelligence', '/reports', '/platforms', '/settings'];
+    const destinations = ['', '/people', '/members', '/memberships', '/access', '/events', '/amenities', '/tee-sheet', '/golf', '/staff', '/operations', '/communications', '/documents', '/reservations', '/automations', '/intelligence', '/reports', '/platforms', '/website', '/settings'];
     destinations.forEach(s => router.prefetch(`/workspace/${id}${s}`));
     (async () => {
       const sb = createClient();
