@@ -1,6 +1,6 @@
 {
   "name": "nadorio",
-  "version": "8.2.0",
+  "version": "9.0.0-alpha.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
