@@ -54,9 +54,9 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
       ]);
       const r = (isSuper === true || p?.platform_role === 'super_admin') ? 'super_admin' : cu?.role;
       if (!c || !r || (!cu?.active && r !== 'super_admin')) { router.replace('/login?error=unauthorized'); return; }
-      if (c.status !== 'active' && r !== 'super_admin') { await sb.auth.signOut(); router.replace('/login?error=club-inactive'); return; }
+      if (c.status !== 'active' && r !== 'super_admin') { router.replace('/login?error=club-inactive'); return; }
       const allowed = new Set((perms || []).filter((x: any) => x.can_view).map((x: any) => x.module_key));
-      const visibleMods = (m || []).filter((x: any) => ['owner', 'admin', 'super_admin'].includes(r) || allowed.size === 0 || allowed.has(x.module_key));
+      const visibleMods = (m || []).filter((x: any) => ['owner', 'admin', 'super_admin'].includes(r) || allowed.has(x.module_key));
       setClub(c); setRole(r); setMods(visibleMods); setReady(true);
       try { sessionStorage.setItem(cacheKey, JSON.stringify({ club: c, role: r, mods: visibleMods })); } catch {}
     })();

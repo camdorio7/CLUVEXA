@@ -1,0 +1,4 @@
+NADORIO 9.0 Beta 2 — Permissions & Members reliability patch
+Copy these files into the same relative paths in GitHub. No SQL changes.
+IMPORTANT: Staff now require explicit can_view=true entries in club_user_permissions for each module; verify permissions before deploying to active staff.
+Check staff navigation, admin member add/remove, membership level toggles, and inactive-organization handling.
