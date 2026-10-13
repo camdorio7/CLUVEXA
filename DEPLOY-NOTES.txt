@@ -1,16 +1,12 @@
-NADORIO 10.0 — Platform Owner reliability update
+NADORIO 10 Dashboard Organization / LINDEX-style Member Overview
 
-Replace only these files at their exact repository paths:
-- components/Shell.tsx
-- app/dashboard/page.tsx
-- app/settings/page.tsx
+Replace:
+app/workspace/[id]/page.tsx
+app/globals.css
 
-Changes:
-- Rechecks Platform Owner authorization on page load instead of displaying a cached authorized shell before verification.
-- Corrects the outdated 9.0 Alpha version label.
-- Makes CD7 dashboard data errors visible and avoids unverified platform-health claims.
-- Makes Platform Settings a functional navigation hub linking to existing management tools.
+Admin: tabbed Overview, People, Features, Operations, Settings sections. All existing licensed feature links remain in Features.
+Member: LINDEX-inspired profile and membership summary cards, existing shortcuts and events remain. Uses organization theme color.
 
-No SQL migrations or new environment variables.
-Checks: TSX syntax parsing, release-check script, ZIP integrity.
-NOT verified: full Next.js build, Supabase RLS, email delivery, payment/billing, staff/member workflows, production security. Do not advertise as a finished production launch on this basis.
+No SQL or environment changes. Verify admin tab navigation and member pages after deployment.
+
+Checks: TSX syntax parsed. No complete production build or live role verification performed.
