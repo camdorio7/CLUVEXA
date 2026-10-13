@@ -1,1 +1,8 @@
-Replace app/workspace/[id]/settings/page.tsx in your repository. No SQL migration needed for this fix. The module catalog is loaded separately by module_key.
+NADORIO 10.0 - Module Rollover Fix
+
+Replace these 3 files in GitHub using their exact relative paths.
+No new SQL required if migration 010 has already been applied.
+CD7 licensing now activates a module by default. Existing licensed but inactive modules must be enabled in Organization Settings once.
+Admin dashboard shows all licensed modules, including inactive modules, and links to their available pages or settings.
+Modules with no implemented page are shown as setup coming soon, not represented as fully functional.
+Refresh the organization dashboard after deployment. Verify CD7 licensing, admin activation, member visibility and staff permissions with separate test accounts.
