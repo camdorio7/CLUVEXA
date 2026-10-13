@@ -4,6 +4,8 @@ let errors = 0;
 for (const path of required) { const ok=existsSync(path); console.log(`${ok?'OK':'MISSING'} ${path}`); if(!ok) errors++; }
 const announcement = readFileSync('app/api/email/announcement/route.ts','utf8');
 if (!announcement.includes('api.resend.com/emails/batch') || !announcement.includes('to:[email]')) { console.error('Release blocker: announcements must send separate recipient messages.'); errors++; }
+const lindex = readFileSync('app/api/integrations/lindex/route.ts','utf8');
+if (!lindex.includes('LINDEX_INTEGRATION_CLUB_ID') || !lindex.includes("eq('user_id', user.id)") || !lindex.includes("platform.status !== 'connected'")) { console.error('Release blocker: LINDEX metrics require tenant authorization and integration ownership.'); errors++; }
 const p=JSON.parse(readFileSync('package.json','utf8'));
 if (p.version.includes('alpha')) {console.error(`Release blocker: package version is still ${p.version}`);errors++;}
 for(const name of ['NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY']) {
