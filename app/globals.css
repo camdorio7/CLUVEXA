@@ -427,3 +427,57 @@ textarea,.field textarea,.memberJoinForm textarea{min-height:92px}
  .n9WorkspaceIntro {padding:25px 20px}
 }
 @media(max-width:600px){.n9TopBrand img,.n9TopMonogram {width:48px;height:48px}.n9TopBrand strong {font-size:18px}.n9TopActions button {padding:10px 12px}.n9Layout .portalWelcome {padding:24px 18px!important}}
+
+
+/* NADORIO 9.0 Alpha 5 — organization-themed portal UX refinements. */
+.n9Layout {--n9-gap:clamp(14px,2vw,24px)}
+.n9Layout,.n9Layout * {box-sizing:border-box}
+.n9Layout .v3Main {min-width:0}
+.n9Layout .v3Main :is(.panel,.card,.v3Section,.portalPanel) {min-width:0;overflow-wrap:anywhere}
+.n9Layout .v3Main :is(.v3HomeGrid,.v3Metrics,.quickGrid,.portalActionGrid,.portalMetricGrid) > * {min-width:0}
+.n9Layout .v3Main :is(input,select,textarea,button) {font:inherit}
+.n9Layout .v3Main :is(input,select,textarea) {max-width:100%;min-height:44px}
+.n9Layout .v3Main :is(button,[role="button"],.button) {min-height:42px}
+.n9Layout .v3Main :is(table) {border-collapse:collapse}
+.n9Layout .v3Main :is(.tableWrap,.tableScroll) {max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+.n9Layout .v3Main :is(img,video,canvas,svg) {max-width:100%}
+.n9Layout .v3Main :is(.v3PageHead,.v3SectionHead) {gap:12px}
+.n9Layout .v3Main :is(.v3PageHead,.v3SectionHead) > * {min-width:0}
+.n9Layout .v3Main :is(.v3Metrics,.quickGrid,.portalActionGrid,.portalMetricGrid) {gap:var(--n9-gap)}
+.n9Layout .v3Main :is(.panel,.card,.v3Section,.portalPanel) {border-radius:16px}
+.n9Layout :is(a,button,input,select,textarea):focus-visible {outline:3px solid var(--club-accent)!important;outline-offset:3px}
+.n9Layout .v3Nav a {transition:background-color .15s ease,border-color .15s ease}
+.n9Layout .v3Nav a[aria-current="page"] {font-weight:800}
+.n9Layout .n9TopActions {justify-content:flex-end}
+.n9Layout .n9WorkspaceTopbar,.n9Layout .n9WorkspaceIntro {min-width:0}
+.n9Layout .n9TopBrand {flex:1 1 260px}
+.n9Layout .n9TopActions {flex:0 1 auto}
+.n9Layout .n9WorkspaceIntro h1 {overflow-wrap:anywhere}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .v3Nav {row-gap:9px}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .v3Main > * {max-width:100%}
+.n9Layout.lindexMember .memberBottomNav {padding-bottom:env(safe-area-inset-bottom)}
+@media(max-width:900px){
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3MobileHeader {z-index:81}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar.mobileOpen {padding:calc(20px + env(safe-area-inset-top)) 18px 24px!important}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar.mobileOpen .clubBrand {display:flex}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar.mobileOpen .sidefoot {display:block}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar.mobileOpen .v3NavGroup {display:flex;flex-direction:column;align-items:stretch;gap:6px;width:100%}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar.mobileOpen .v3NavGroup>span {display:block;font-size:11px;font-weight:800;letter-spacing:.09em;margin:12px 4px 4px;color:var(--club-primary)}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar.mobileOpen .v3Nav a {width:100%}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .n9WorkspaceTopbar {gap:12px}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .n9TopActions {justify-content:flex-start}
+}
+@media(max-width:600px){
+ .n9Layout .v3Main :is(.v3Metrics,.portalMetricGrid) {grid-template-columns:repeat(2,minmax(0,1fr))!important}
+ .n9Layout .v3Main :is(.quickGrid,.portalActionGrid) {grid-template-columns:minmax(0,1fr)!important}
+ .n9Layout .v3Main :is(.v3PageHead,.v3SectionHead) {flex-wrap:wrap}
+ .n9Layout .v3Main :is(.v3PageHead,.v3SectionHead) :is(button,a) {max-width:100%}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Main {padding:18px 14px calc(40px + env(safe-area-inset-bottom))!important}
+ .n9Layout .n9WorkspaceIntro {margin-bottom:18px;border-radius:18px}
+ .n9Layout .n9TopBrand small {font-size:10px}
+}
+@media(max-width:360px){
+ .n9Layout .v3Main :is(.v3Metrics,.portalMetricGrid) {grid-template-columns:minmax(0,1fr)!important}
+ .n9Layout .n9TopActions {width:100%;justify-content:space-between}
+}
+@media(prefers-reduced-motion:reduce){.n9Layout .v3Nav a {transition:none}}

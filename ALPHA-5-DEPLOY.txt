@@ -1,0 +1,5 @@
+NADORIO 9.0 Alpha 5 - responsive portal polish
+
+Replace app/globals.css and components/WorkspaceShell.tsx in the existing GitHub repository.
+No SQL migrations or environment changes.
+Verify on phone, tablet, desktop and test admin/staff/member roles.
