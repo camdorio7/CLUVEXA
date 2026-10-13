@@ -1,11 +1,10 @@
 import {NextRequest,NextResponse} from 'next/server';
-import {createClient} from '@supabase/supabase-js';
-function client(req:NextRequest){return createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,{global:{headers:{Authorization:req.headers.get('authorization')||''}},auth:{persistSession:false,autoRefreshToken:false}})}
+import {authorizeOrganizationEmail} from '../../../../lib/organization-email-access';
 function esc(s:string){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));}
 export async function POST(req:NextRequest){try{
  if(!process.env.RESEND_API_KEY)return NextResponse.json({error:'Email service is not configured.'},{status:503});
- const {clubId,title,body,audience='all'}=await req.json(); if(!clubId||!title||!body)return NextResponse.json({error:'Missing fields.'},{status:400});
- const sb=client(req);const {data:{user}}=await sb.auth.getUser();if(!user)return NextResponse.json({error:'Unauthorized'},{status:401});
+ const {clubId,title,body,audience='all'}=await req.json(); if(typeof clubId!=='string'||!clubId||typeof title!=='string'||!title.trim()||typeof body!=='string'||!body.trim()||!['all','staff','members'].includes(audience))return NextResponse.json({error:'Invalid announcement fields or audience.'},{status:400});
+ const access=await authorizeOrganizationEmail(req,clubId,['owner','admin','manager']);if(!access.ok)return NextResponse.json({error:access.error},{status:access.status});const {sb,user}=access;
  const {data:club}=await sb.from('clubs').select('name,contact_email').eq('id',clubId).single(); if(!club)return NextResponse.json({error:'Club not found or access denied.'},{status:403});
  let recipients:string[]=[];
  if(audience==='staff'||audience==='all'){const {data}=await sb.from('club_users').select('role,profiles(email)').eq('club_id',clubId).eq('active',true); recipients.push(...(data||[]).filter((x:any)=>audience==='all'||['owner','admin','manager','staff'].includes(x.role)).map((x:any)=>x.profiles?.email).filter(Boolean));}

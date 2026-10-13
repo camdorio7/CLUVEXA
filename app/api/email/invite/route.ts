@@ -1,20 +1,21 @@
 import {NextRequest,NextResponse} from 'next/server';
+import {authorizeOrganizationEmail} from '../../../../lib/organization-email-access';
 import {createClient} from '@supabase/supabase-js';
 
-function supabaseFor(req:NextRequest){
-  const url=process.env.NEXT_PUBLIC_SUPABASE_URL!;
-  const key=process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
-  const auth=req.headers.get('authorization')||'';
-  return createClient(url,key,{global:{headers:{Authorization:auth}},auth:{persistSession:false,autoRefreshToken:false}});
-}
 function esc(s:string){return s.replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]||c));}
 export async function POST(req:NextRequest){
  try{
   if(!process.env.RESEND_API_KEY)return NextResponse.json({error:'Email service is not configured.'},{status:503});
-  const {token}=await req.json(); if(!token)return NextResponse.json({error:'Missing invitation token.'},{status:400});
-  const sb=supabaseFor(req); const {data:{user}}=await sb.auth.getUser(); if(!user)return NextResponse.json({error:'Unauthorized'},{status:401});
-  const {data:inv,error}=await sb.from('club_invitations').select('id,club_id,email,full_name,role,status,token,expires_at,clubs(name,logo_url,contact_email)').eq('token',token).single();
+  const {token}=await req.json(); if(typeof token!=='string'||!token.trim())return NextResponse.json({error:'Missing invitation token.'},{status:400});
+  const authorization=req.headers.get('authorization')||'';
+  if(!/^Bearer\s+\S+$/i.test(authorization))return NextResponse.json({error:'Sign in required.'},{status:401});
+  const sbLookup=createClient(process.env.NEXT_PUBLIC_SUPABASE_URL!,process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,{global:{headers:{Authorization:authorization}},auth:{persistSession:false,autoRefreshToken:false}});
+  const {data:inv,error}=await sbLookup.from('club_invitations').select('id,club_id,email,full_name,role,status,token,expires_at,clubs(name,logo_url,contact_email)').eq('token',token).single();
   if(error||!inv||inv.status!=='pending')return NextResponse.json({error:'Invitation not found.'},{status:404});
+  const access=await authorizeOrganizationEmail(req,inv.club_id,['owner','admin','manager']);
+  if(!access.ok)return NextResponse.json({error:access.error},{status:access.status});
+  const {sb,user}=access;
+  if(inv.expires_at && new Date(inv.expires_at).getTime()<=Date.now())return NextResponse.json({error:'Invitation expired. Renew it before sending.'},{status:409});
   const club:any=Array.isArray((inv as any).clubs)?(inv as any).clubs[0]:(inv as any).clubs;
   const appUrl=String(process.env.NEXT_PUBLIC_APP_URL||'https://app.nadorio.com').replace(/\/$/,'');
   const joinUrl=`${appUrl}/join?token=${inv.token}`;
