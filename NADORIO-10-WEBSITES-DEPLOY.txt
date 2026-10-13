@@ -1,0 +1,21 @@
+NADORIO 10.0 — UNIVERSAL WEBSITES + EMAIL INBOX
+
+This is an integrated functional foundation, not a complete drag-and-drop builder or a production-certified release.
+
+DEPLOY ORDER
+1. Run supabase/migrations/014_nadorio_universal_websites.sql in Supabase SQL Editor.
+2. Add the changed app/ and components/ files to GitHub, preserving their paths.
+3. Set SUPABASE_SERVICE_ROLE_KEY as a SERVER-ONLY Vercel environment variable. NEVER prefix it with NEXT_PUBLIC_. Redeploy.
+4. In CD7 licensing, license and activate website_builder for the organization, and email_center for its administrators to view contact messages.
+5. As organization admin, open Workspace > Website Builder. Enter title, about, services and contact information; click Save & Publish.
+6. Public site is at https://YOUR-NADORIO-DOMAIN/site/ORGANIZATION-UUID. Test a contact submission and view it in Workspace > Email Center.
+
+NOTES
+- The existing Linderhof GitHub website-management feature is untouched.
+- The public site inherits the organization's primary color and logo.
+- Drafts are not publicly readable. Organization admin ownership and module licensing are enforced with Supabase RLS.
+- Public messages are stored in organization_site_messages; they are NOT sent by email. The Email Center is an inbox for these messages, with a mailto reply action.
+- Public contact endpoint uses honeypot and input limits, but DOES NOT have robust IP rate limiting or CAPTCHA. Add a provider-based rate limiter and bot protection before public marketing/launch.
+- Public sites use NADORIO subpaths. Custom domains, visual drag-and-drop, image uploads, templates, SMTP outbound email, weather and billing are NOT implemented by this update.
+- Test with CD7 owner, organization admin, staff, member and anonymous accounts. No live Supabase/Vercel tests have been performed.
+- If your Supabase project already has migration 014, rename the SQL file to your next available migration number before using the CLI.

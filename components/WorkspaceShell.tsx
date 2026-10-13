@@ -13,14 +13,14 @@ const defs: Record<string, [string, string]> = {
   amenities: ['/amenities', 'Amenities'], access: ['/access', 'Access & Guests'], events: ['/events', 'Events'],
   tee_sheet: ['/tee-sheet', 'Tee Sheet'], golf: ['/golf', 'Golf & Tournaments'], staff: ['/staff', 'Staff'],
   operations: ['/operations', 'Operations'], communications: ['/communications', 'Communications'], reports: ['/reports', 'Reports'],
-  website_management: ['/website', 'Website Management'], connected_platforms: ['/platforms', 'Connected Platforms'], documents: ['/documents','Documents'], reservations: ['/reservations','Reservations'], automations: ['/automations','Automations'], intelligence: ['/intelligence','Intelligence'],
+  website_management: ['/website', 'Website Management'], website_builder: ['/site-builder', 'Website Builder'], email_center: ['/email-center', 'Email Center'], connected_platforms: ['/platforms', 'Connected Platforms'], documents: ['/documents','Documents'], reservations: ['/reservations','Reservations'], automations: ['/automations','Automations'], intelligence: ['/intelligence','Intelligence'],
 };
 
 const groups = [
   { label: 'People & Access', keys: ['members', 'memberships', 'access'] },
   { label: 'Events & Services', keys: ['events', 'amenities', 'tee_sheet', 'golf'] },
   { label: 'Team & Operations', keys: ['staff', 'operations'] },
-  { label: 'Engage & Insights', keys: ['communications', 'documents', 'reports', 'intelligence', 'connected_platforms', 'website_management'] },
+  { label: 'Engage & Insights', keys: ['communications', 'documents', 'reports', 'intelligence', 'connected_platforms', 'website_management', 'website_builder', 'email_center'] },
   { label: 'Platform', keys: ['reservations', 'automations'] },
 ];
 
