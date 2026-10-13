@@ -1,0 +1,9 @@
+NADORIO 9.0 Alpha 6 — dashboard layout refinement
+
+Replace only:
+app/workspace/[id]/page.tsx
+app/globals.css
+
+Includes responsive Admin, Staff, Member dashboard refinements, neutral organization wording, and enabled-module shortcut filtering.
+
+No SQL migration or environment changes. Test Vercel build, dashboard access, organization modules and iPhone/iPad/desktop views.
