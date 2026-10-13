@@ -1,1 +1,1 @@
-Replace only app/workspace/[id]/page.tsx. Fixes TS2339 on roleResult.error by removing the unreachable fallback branch after verified user authentication. No SQL changes.
+Replace app/workspace/[id]/settings/page.tsx in your repository. No SQL migration needed for this fix. The module catalog is loaded separately by module_key.
