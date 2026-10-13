@@ -245,3 +245,26 @@ textarea,.field textarea,.memberJoinForm textarea{min-height:92px}
 .v8AttentionList{display:grid;gap:9px}.v8AttentionList>a,.v8AllClear{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:15px;padding:16px 18px;border:1px solid rgba(255,255,255,.08);border-radius:17px;background:rgba(255,255,255,.025);color:inherit;text-decoration:none;transition:.18s ease}.v8AttentionList>a:hover{transform:translateY(-1px);border-color:rgba(46,168,255,.35);background:rgba(46,168,255,.06)}.v8AttentionList>a.urgent{border-left:3px solid #ffb454}.v8AttentionIcon{display:grid;place-items:center;width:40px;height:40px;border-radius:12px;background:rgba(46,168,255,.1);color:var(--club-accent)}.v8AttentionIcon svg{width:19px}.v8AttentionList b{font-size:14px}.v8AttentionList p{margin:3px 0 0;font-size:12px;color:rgba(244,248,255,.58)}.v8AttentionList>a>svg{width:17px;opacity:.55}.v8AllClear{grid-template-columns:auto 1fr;padding:20px}.v8AllClear>svg{color:#57d99a}.v8AllClear p{margin:3px 0 0}
 @media(max-width:900px){.v8CommandHead{align-items:stretch;flex-direction:column}.v8Search{min-width:0}.v8PulseGrid{grid-template-columns:repeat(2,1fr)}}
 @media(max-width:560px){.v8CommandCenter{padding:18px;margin:18px 0;border-radius:22px}.v8CommandHead h2{font-size:25px}.v8PulseGrid{grid-template-columns:1fr 1fr;gap:8px}.v8PulseGrid>div{min-height:105px;padding:14px}.v8AttentionList>a{padding:14px}.v8AttentionIcon{width:36px;height:36px}}
+
+/* NADORIO 8.1 — accessible workspace navigation and responsive polish */
+.n81NavBackdrop{display:none}
+.v3Main,.clubMain{min-width:0}
+.v3Main :is(input,select,textarea){max-width:100%;box-sizing:border-box}
+.v3Main :is(table){max-width:100%}
+.v3Main :is(.panel,.card,.v3Section){min-width:0}
+.v3Nav a:focus-visible,.v3MobileHeader button:focus-visible,.n81NavBackdrop:focus-visible{outline:3px solid var(--club-accent,#19d9e8);outline-offset:3px}
+@media(max-width:900px){
+ .n81NavBackdrop{display:block;position:fixed;inset:0;z-index:51;background:rgba(0,0,0,.55);border:0;border-radius:0;padding:0;cursor:pointer}
+ .v3Sidebar{z-index:52;max-height:100dvh;overflow-y:auto;overscroll-behavior:contain;padding-bottom:max(20px,env(safe-area-inset-bottom))}
+ .v3MobileHeader{padding-left:max(15px,env(safe-area-inset-left));padding-right:max(15px,env(safe-area-inset-right))}
+ .v3MobileHeader .clubBrand.mini{min-width:0;overflow:hidden}
+ .v3MobileHeader .clubBrand.mini b{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+ .v3MobileHeader button{min-width:44px;min-height:44px;display:grid;place-items:center;flex-shrink:0}
+ .v3Main{padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right))}
+}
+@media(max-width:520px){
+ .v3Main :is(.panelhead,.v3SectionHead){flex-wrap:wrap;gap:10px}
+ .v3Main :is(.inlineForm,.settingsBody){min-width:0}
+ .v3Main :is(.button,button){max-width:100%}
+}
+@media(prefers-reduced-motion:reduce){.v3Sidebar{transition:none}}
