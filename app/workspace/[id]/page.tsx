@@ -36,7 +36,7 @@ export default function Page() {
         sb.from('access_log').select('*', { count: 'exact', head: true }).eq('club_id', id).gte('checked_in_at', today.toISOString()),
         sb.from('operational_tasks').select('*', { count: 'exact', head: true }).eq('club_id', id).neq('status', 'complete'),
         sb.from('member_join_requests').select('*', { count: 'exact', head: true }).eq('club_id', id).eq('status', 'pending'),
-        user ? sb.from('club_users').select('role,active').eq('club_id', id).eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
+        sb.from('club_users').select('role,active').eq('club_id', id).eq('user_id', user.id).maybeSingle(),
         sb.from('profiles').select('full_name,email,platform_role').eq('id', user.id).maybeSingle(),
         sb.rpc('is_super_admin'),
       ]);

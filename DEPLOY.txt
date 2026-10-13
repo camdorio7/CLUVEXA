@@ -1,1 +1,1 @@
-Replace app/workspace/[id]/page.tsx only. No SQL or environment changes. This aligns the dashboard role check with WorkspaceShell for platform super admins and active organization users. Test with platform owner, org admin, staff, member and unassigned user.
+Replace only app/workspace/[id]/page.tsx. Fixes TS2339 on roleResult.error by removing the unreachable fallback branch after verified user authentication. No SQL changes.
