@@ -369,3 +369,61 @@ textarea,.field textarea,.memberJoinForm textarea{min-height:92px}
   .lindexInspired .v3Main .panel,.lindexInspired .v3Main .card {padding:16px;}
 }
 @media(prefers-reduced-motion:reduce){.lindexInspired .v3Nav a{transition:none}}
+
+
+/* NADORIO 9.0 Alpha 4 — LINDEX structural layouts, organization-owned branding. */
+.workspace.n9Layout {background:var(--club-bg);color:var(--club-text);--lindex-green:var(--club-primary);--lindex-gold:var(--club-accent);--lindex-paper:var(--club-bg);--lindex-border:color-mix(in srgb,var(--club-primary) 14%,white)}
+.n9Layout .v3Main {background:var(--club-bg);color:var(--club-text)}
+.n9Layout .v3Main h1,.n9Layout .v3Main h2,.n9Layout .v3Main h3 {color:inherit}
+.n9Layout .v3Main :is(.panel,.card,.v3Section,.portalPanel,.portalActionGrid>a,.portalMetricGrid>*) {background:var(--club-surface)!important;color:var(--club-text)!important;border-color:color-mix(in srgb,var(--club-primary) 15%,transparent)!important}
+.n9Layout .v3Main :is(input,select,textarea) {color:var(--club-text)!important;background:var(--club-surface)!important;border-color:color-mix(in srgb,var(--club-primary) 20%,transparent)!important}
+.n9Layout .v3Main .button.gradient,.n9Layout .v3Main .portalPrimaryAction {background:var(--club-primary)!important;border-color:var(--club-primary)!important;color:white!important}
+.n9Layout .portalWelcome {background:linear-gradient(110deg,color-mix(in srgb,var(--club-primary) 90%,black),var(--club-primary))!important;border-color:var(--club-primary)!important}
+.n9Layout .portalWelcome :is(h1,h2,p) {color:white!important}
+.n9Layout .v3Nav a.active {background:var(--club-accent)!important;color:var(--club-text)!important;border-color:transparent!important;box-shadow:none}
+.n9Layout .v3Nav a:hover {background:color-mix(in srgb,var(--club-primary) 12%,transparent)!important}
+.n9Layout .v3Nav a:focus-visible,.n9Layout .v3Main button:focus-visible {outline-color:var(--club-accent)}
+/* Member experience: LINDEX-style permanent left navigation and rich home cards. */
+.n9Layout.lindexMember .v3Sidebar {background:linear-gradient(180deg,var(--club-primary),color-mix(in srgb,var(--club-primary) 80%,black));border-color:transparent}
+.n9Layout.lindexMember .v3Sidebar .clubBrand b,.n9Layout.lindexMember .v3Nav a {color:white!important}
+.n9Layout.lindexMember .v3NavGroup>span {color:var(--club-accent)}
+.n9Layout.lindexMember .v3Main {margin-left:272px;padding-top:34px}
+/* Admin and staff: LINDEX-style top masthead and horizontal categorized tool navigation. */
+.n9Layout:is(.lindexAdmin,.lindexStaff) {display:block;min-height:100vh}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .n9WorkspaceTopbar {display:flex;justify-content:space-between;align-items:center;gap:20px;padding:20px clamp(18px,3vw,42px);background:var(--club-surface);border-bottom:1px solid color-mix(in srgb,var(--club-primary) 15%,transparent)}
+.n9TopBrand {display:flex;align-items:center;gap:14px;min-width:0}
+.n9TopBrand img,.n9TopMonogram {width:62px;height:62px;object-fit:contain;border-radius:12px;flex:none}
+.n9TopMonogram {display:grid;place-items:center;background:var(--club-primary);color:white;font-weight:800}
+.n9TopBrand div {display:flex;flex-direction:column;min-width:0;gap:3px}
+.n9TopBrand strong {font-size:clamp(18px,2vw,27px);line-height:1.1;overflow-wrap:anywhere;color:var(--club-text)}
+.n9TopBrand span {font-size:11px;font-weight:800;letter-spacing:.17em;color:var(--club-primary)}
+.n9TopBrand small {font-size:11px;opacity:.7;color:var(--club-text)}
+.n9TopActions {display:flex;align-items:center;gap:16px;flex-wrap:wrap;color:var(--club-text)}
+.n9TopActions a {color:var(--club-primary);font-weight:700}
+.n9TopActions button {background:var(--club-primary);color:white;border:0;border-radius:12px;padding:13px 18px;cursor:pointer;font-weight:700}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar {position:relative!important;inset:auto!important;transform:none!important;width:auto!important;max-width:none!important;height:auto!important;min-height:0!important;overflow:visible!important;box-shadow:none!important;background:var(--club-surface)!important;border:0!important;padding:14px clamp(18px,3vw,42px)!important}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar>.clubBrand,.n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar>.sidefoot {display:none}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .v3Nav {display:flex;flex-wrap:wrap;align-items:center;gap:10px;margin:0;padding:0}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .v3NavGroup {display:contents}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .v3NavGroup>span {display:none}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .v3Nav a {display:inline-flex;align-items:center;gap:7px;min-height:44px;color:var(--club-text)!important;background:var(--club-bg)!important;border:1px solid color-mix(in srgb,var(--club-primary) 12%,transparent)!important;border-radius:12px!important;padding:10px 14px!important}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .v3Nav a.active {background:var(--club-primary)!important;color:white!important}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .v3Main {margin:0!important;padding:26px clamp(18px,3vw,42px) 80px!important;max-width:none!important}
+.n9WorkspaceIntro {background:var(--club-primary);border-radius:24px;padding:32px clamp(24px,4vw,48px);margin:0 0 28px;color:white}
+.n9WorkspaceIntro span {color:var(--club-accent);font-size:12px;font-weight:800;letter-spacing:.16em}
+.n9WorkspaceIntro h1 {font-family:Georgia,serif;font-size:clamp(29px,3vw,45px);color:white!important;margin:10px 0}
+.n9WorkspaceIntro p {color:white;margin:0;opacity:.9}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .v3MobileHeader {display:none}
+@media(max-width:900px){
+ .n9Layout.lindexMember .v3Main {margin-left:0;padding-top:calc(82px + env(safe-area-inset-top))}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .n9WorkspaceTopbar {padding:14px 16px;flex-wrap:wrap}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .n9TopActions {gap:12px}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .n9TopActions>span {display:none}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar {display:none!important}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar.mobileOpen {display:block!important;position:fixed!important;top:0!important;bottom:0!important;left:0!important;width:min(88vw,340px)!important;overflow-y:auto!important;z-index:80!important;box-shadow:10px 0 40px #0004!important}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar.mobileOpen .v3Nav {display:flex;flex-direction:column;align-items:stretch}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3MobileHeader {display:flex;background:var(--club-surface);color:var(--club-text);position:relative;top:auto}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Main {padding:20px 16px 60px!important}
+ .n9WorkspaceIntro {padding:25px 20px}
+}
+@media(max-width:600px){.n9TopBrand img,.n9TopMonogram {width:48px;height:48px}.n9TopBrand strong {font-size:18px}.n9TopActions button {padding:10px 12px}.n9Layout .portalWelcome {padding:24px 18px!important}}

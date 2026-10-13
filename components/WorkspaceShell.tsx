@@ -77,8 +77,21 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
 
   if (!ready || !club) return <main className="workspaceBoot" aria-label="Opening workspace" />;
 
+  const staffWorkspace = !member && !admin;
+  const theme = {
+    '--club-primary': club.primary_color || '#275e72',
+    '--club-accent': club.secondary_color || '#d6a44b',
+    '--club-bg': club.background_color || '#f4f6f8',
+    '--club-surface': club.surface_color || '#ffffff',
+    '--club-text': club.text_color || '#213547',
+  } as React.CSSProperties;
+
   return (
-    <div className={`workspace v3workspace lindexInspired ${member ? 'lindexMember' : admin ? 'lindexAdmin' : 'lindexStaff'}`} style={{ '--club-primary': '#15523e', '--club-accent': '#b99b4b', '--club-bg': '#f3f5f1', '--club-surface': '#ffffff', '--club-text': '#18372b' } as React.CSSProperties}>
+    <div className={`workspace v3workspace lindexInspired n9Layout ${member ? 'lindexMember' : admin ? 'lindexAdmin' : 'lindexStaff'}`} style={theme}>
+      {!member && <header className="n9WorkspaceTopbar">
+        <div className="n9TopBrand">{club.logo_url ? <img src={club.logo_url} alt="" /> : <span className="n9TopMonogram">{club.name.slice(0,2).toUpperCase()}</span>}<div><strong>{club.name}</strong><span>{admin ? 'ADMINISTRATION' : 'STAFF WORKSPACE'}</span><small>Powered by CD7 Technologies LLC</small></div></div>
+        <div className="n9TopActions"><span>{admin ? 'Organization administration' : 'Team operations'}</span><Link href={`/workspace/${id}/profile`}>My account</Link><button type="button" onClick={out}>Sign out</button></div>
+      </header>}
       <header className="v3MobileHeader">
         <div className="clubBrand mini">{club.logo_url ? <img src={club.logo_url} alt="" /> : <div className="clubMark">{club.name.slice(0, 2).toUpperCase()}</div>}<b>{club.name}</b></div>
         <button type="button" onClick={() => setMobile(!mobile)} aria-label={mobile ? "Close navigation" : "Open navigation"} aria-expanded={mobile} aria-controls="nadorio-workspace-navigation">{mobile ? <X /> : <Menu />}</button>
@@ -100,7 +113,10 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
         </nav>
         <div className="sidefoot"><NadorioLogo /><div className="version">NADORIO 9.0 · {role.replace('_', ' ')}</div><a className="lindexCd7Credit" href="https://cd7technologies.com" target="_blank" rel="noopener noreferrer">Powered by <strong>CD7 Technologies LLC</strong></a><button className="signout" onClick={out}><LogOut size={15} /> Sign out</button></div>
       </aside>
-      <main className="main clubMain v3Main">{children}</main>
+      <main className="main clubMain v3Main">
+        {!member && <div className="n9WorkspaceIntro"><div><span>{admin ? 'ADMINISTRATOR TOOLS' : 'YOUR WORKSPACE'}</span><h1>{admin ? 'Organization Administration' : 'Staff Workspace'}</h1><p>{admin ? 'Your organization, your team, and the day ahead.' : 'Everything you need for your shift and daily operations.'}</p></div></div>}
+        {children}
+      </main>
       {member && <nav className="memberBottomNav"><Link href={`/workspace/${id}`}><Home /><span>Home</span></Link><Link href={`/workspace/${id}/card`}><CreditCard/><span>Card</span></Link><Link href={`/workspace/${id}/notifications`}><Bell/><span>Alerts</span></Link><Link href={`/workspace/${id}/profile`}><UserRound/><span>Profile</span></Link>{map.has('events') && <Link href={`/workspace/${id}/events`}><CalendarDays /><span>Events</span></Link>}{map.has('tee_sheet') && <Link href={`/workspace/${id}/tee-sheet`}><Clock3 /><span>Tee Times</span></Link>}{map.has('golf') && <Link href={`/workspace/${id}/golf`}><Flag /><span>Golf</span></Link>}</nav>}
     </div>
   );
