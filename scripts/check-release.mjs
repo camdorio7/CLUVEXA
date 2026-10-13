@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs';
-const required = ['app/api/site/[id]/contact/route.ts','app/site/[id]/page.tsx','app/workspace/[id]/site-builder/page.tsx','app/workspace/[id]/email-center/page.tsx','supabase/migrations/014_nadorio_universal_websites.sql'];
+const required = ['app/api/site/[id]/contact/route.ts','app/site/[id]/page.tsx','app/workspace/[id]/site-builder/page.tsx','app/workspace/[id]/email-center/page.tsx','supabase/migrations/014_nadorio_universal_websites.sql','supabase/migrations/015_nadorio_website_pages.sql','app/site/[id]/[slug]/page.tsx'];
 let errors = 0;
 for (const path of required) { const ok=existsSync(path); console.log(`${ok?'OK':'MISSING'} ${path}`); if(!ok) errors++; }
 const p=JSON.parse(readFileSync('package.json','utf8'));

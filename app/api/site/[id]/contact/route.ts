@@ -5,7 +5,7 @@ export async function POST(request:NextRequest,{params}:{params:Promise<{id:stri
  const {id}=await params;
  if(!/^[0-9a-f-]{36}$/i.test(id))return NextResponse.json({error:'Invalid organization'},{status:400});
  let body:Record<string,unknown>;
- try{if(Number(request.headers.get('content-length')||0)>10000)return NextResponse.json({error:'Message too large'},{status:413});body=await request.json();if(!body||typeof body!=='object'||Array.isArray(body))throw Error('Invalid payload')}catch{return NextResponse.json({error:'Invalid message'},{status:400})}
+ try{if(Number(request.headers.get('content-length')||0)>10000)return NextResponse.json({error:'Message too large'},{status:413});const raw=await request.text();if(raw.length>10000)return NextResponse.json({error:'Message too large'},{status:413});body=JSON.parse(raw);if(!body||typeof body!=='object'||Array.isArray(body))throw Error('Invalid payload')}catch{return NextResponse.json({error:'Invalid message'},{status:400})}
  if(body.website)return NextResponse.json({ok:true});
  const name=typeof body.name==='string'?body.name.trim():'';
  const email=typeof body.email==='string'?body.email.trim():'';
