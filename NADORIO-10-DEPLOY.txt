@@ -1,0 +1,6 @@
+NADORIO 10.0 — integrated branding and module-controls foundation
+1. Run supabase/migrations/010_nadorio_organization_modules.sql in Supabase SQL Editor FIRST.
+2. Copy the changed application files into the repository at the exact paths shown in this ZIP.
+3. Deploy to Vercel. Test as CD7 Platform Owner, organization admin, staff, and member.
+4. Verify module license changes, admin activation, member visibility, and theme updates.
+IMPORTANT: This is not the full NADORIO 10.0 overhaul. Universal website builder, email center, CD7 button audit, and end-to-end production testing remain outstanding.

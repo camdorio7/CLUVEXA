@@ -6,6 +6,7 @@ import { useParams, usePathname, useRouter } from 'next/navigation';
 import { Building2, Bell, CalendarDays, Clock3, CreditCard, Flag, Home, LogOut, Menu, Settings, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import NadorioLogo from './NadorioLogo';
+import { organizationTheme } from '../lib/organization-theme';
 
 const defs: Record<string, [string, string]> = {
   overview: ['', 'Home'], members: ['/members', 'Member Directory'], memberships: ['/memberships', 'Memberships'],
@@ -49,14 +50,14 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
         sb.from('club_users').select('role,active').eq('club_id', id).eq('user_id', user.id).maybeSingle(),
         sb.from('profiles').select('platform_role').eq('id', user.id).maybeSingle(),
         sb.rpc('is_super_admin'),
-        sb.from('club_modules').select('module_key,licensed,club_enabled,nav_label,sort_order').eq('club_id', id).eq('licensed', true).eq('club_enabled', true).order('sort_order'),
+        sb.from('club_modules').select('module_key,licensed,club_enabled,member_visible,nav_label,sort_order').eq('club_id', id).eq('licensed', true).eq('club_enabled', true).order('sort_order'),
         sb.from('club_user_permissions').select('module_key,can_view').eq('club_id', id).eq('user_id', user.id),
       ]);
       const r = (isSuper === true || p?.platform_role === 'super_admin') ? 'super_admin' : cu?.role;
       if (!c || !r || (!cu?.active && r !== 'super_admin')) { router.replace('/login?error=unauthorized'); return; }
       if (c.status !== 'active' && r !== 'super_admin') { router.replace('/login?error=club-inactive'); return; }
       const allowed = new Set((perms || []).filter((x: any) => x.can_view).map((x: any) => x.module_key));
-      const visibleMods = (m || []).filter((x: any) => ['owner', 'admin', 'super_admin'].includes(r) || allowed.has(x.module_key));
+      const visibleMods = (m || []).filter((x: any) => (['owner', 'admin', 'super_admin'].includes(r) || (r === 'member' ? x.member_visible === true : allowed.has(x.module_key))));
       setClub(c); setRole(r); setMods(visibleMods); setReady(true);
       try { sessionStorage.setItem(cacheKey, JSON.stringify({ club: c, role: r, mods: visibleMods })); } catch {}
     })();
@@ -78,13 +79,7 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
   if (!ready || !club) return <main className="workspaceBoot" aria-label="Opening workspace" />;
 
   const staffWorkspace = !member && !admin;
-  const theme = {
-    '--club-primary': club.primary_color || '#275e72',
-    '--club-accent': club.secondary_color || '#d6a44b',
-    '--club-bg': club.background_color || '#f4f6f8',
-    '--club-surface': club.surface_color || '#ffffff',
-    '--club-text': club.text_color || '#213547',
-  } as React.CSSProperties;
+  const theme = organizationTheme(club.primary_color) as React.CSSProperties;
 
   return (
     <div className={`workspace v3workspace lindexInspired n9Layout ${member ? 'lindexMember' : admin ? 'lindexAdmin' : 'lindexStaff'}`} style={theme}>
@@ -111,7 +106,7 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
           )}
           {admin && <div className="v3NavGroup"><span>ADMINISTRATION</span><Link className={path === `/workspace/${id}/settings` ? 'active' : ''} href={`/workspace/${id}/settings`} onClick={closeMobile}><Settings size={16} /> Organization Settings</Link><Link className={path === `/workspace/${id}/audit` ? 'active' : ''} href={`/workspace/${id}/audit`} onClick={closeMobile}><ShieldCheck size={16}/> Audit & Security</Link></div>}
         </nav>
-        <div className="sidefoot"><NadorioLogo /><div className="version">NADORIO 9.0 · {role.replace('_', ' ')}</div><a className="lindexCd7Credit" href="https://cd7technologies.com" target="_blank" rel="noopener noreferrer">Powered by <strong>CD7 Technologies LLC</strong></a><button className="signout" onClick={out}><LogOut size={15} /> Sign out</button></div>
+        <div className="sidefoot"><NadorioLogo /><div className="version">NADORIO 10.0 · {role.replace('_', ' ')}</div><a className="lindexCd7Credit" href="https://cd7technologies.com" target="_blank" rel="noopener noreferrer">Powered by <strong>CD7 Technologies LLC</strong></a><button className="signout" onClick={out}><LogOut size={15} /> Sign out</button></div>
       </aside>
       <main className="main clubMain v3Main">
         {!member && <div className="n9WorkspaceIntro"><div><span>{admin ? 'ADMINISTRATOR TOOLS' : 'YOUR WORKSPACE'}</span><h1>{admin ? 'Organization Administration' : 'Staff Workspace'}</h1><p>{admin ? 'Your organization, your team, and the day ahead.' : 'Everything you need for your shift and daily operations.'}</p></div></div>}
