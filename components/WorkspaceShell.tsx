@@ -16,8 +16,8 @@ const defs: Record<string, [string, string]> = {
 };
 
 const groups = [
-  { label: 'Membership', keys: ['members', 'memberships', 'access'] },
-  { label: 'Club Life', keys: ['events', 'amenities', 'tee_sheet', 'golf'] },
+  { label: 'People & Access', keys: ['members', 'memberships', 'access'] },
+  { label: 'Events & Services', keys: ['events', 'amenities', 'tee_sheet', 'golf'] },
   { label: 'Team & Operations', keys: ['staff', 'operations'] },
   { label: 'Engage & Insights', keys: ['communications', 'documents', 'reports', 'intelligence', 'connected_platforms', 'website_management'] },
   { label: 'Platform', keys: ['reservations', 'automations'] },
@@ -96,9 +96,9 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
               {groups.map(g => { const items = g.keys.filter(k => map.has(k)); if (!items.length) return null; return <div className="v3NavGroup" key={g.label}><span>{g.label.toUpperCase()}</span>{items.map(k => { const [s, l] = defs[k]; const mod: any = map.get(k); return <Link key={k} className={path === `/workspace/${id}${s}` ? 'active' : ''} href={`/workspace/${id}${s}`} onClick={closeMobile}>{mod?.nav_label || l}</Link>; })}</div>; })}
             </>
           )}
-          {admin && <div className="v3NavGroup"><span>ADMINISTRATION</span><Link className={path === `/workspace/${id}/settings` ? 'active' : ''} href={`/workspace/${id}/settings`} onClick={closeMobile}><Settings size={16} /> Club Settings</Link><Link className={path === `/workspace/${id}/audit` ? 'active' : ''} href={`/workspace/${id}/audit`} onClick={closeMobile}><ShieldCheck size={16}/> Audit & Security</Link></div>}
+          {admin && <div className="v3NavGroup"><span>ADMINISTRATION</span><Link className={path === `/workspace/${id}/settings` ? 'active' : ''} href={`/workspace/${id}/settings`} onClick={closeMobile}><Settings size={16} /> Organization Settings</Link><Link className={path === `/workspace/${id}/audit` ? 'active' : ''} href={`/workspace/${id}/audit`} onClick={closeMobile}><ShieldCheck size={16}/> Audit & Security</Link></div>}
         </nav>
-        <div className="sidefoot"><NadorioLogo /><div className="version">NADORIO 8.1 · {role.replace('_', ' ')}</div><button className="signout" onClick={out}><LogOut size={15} /> Sign out</button></div>
+        <div className="sidefoot"><NadorioLogo /><div className="version">NADORIO 9.0 Alpha 2 · {role.replace('_', ' ')}</div><button className="signout" onClick={out}><LogOut size={15} /> Sign out</button></div>
       </aside>
       <main className="main clubMain v3Main">{children}</main>
       {member && <nav className="memberBottomNav"><Link href={`/workspace/${id}`}><Home /><span>Home</span></Link><Link href={`/workspace/${id}/card`}><CreditCard/><span>Card</span></Link><Link href={`/workspace/${id}/notifications`}><Bell/><span>Alerts</span></Link><Link href={`/workspace/${id}/profile`}><UserRound/><span>Profile</span></Link>{map.has('events') && <Link href={`/workspace/${id}/events`}><CalendarDays /><span>Events</span></Link>}{map.has('tee_sheet') && <Link href={`/workspace/${id}/tee-sheet`}><Clock3 /><span>Tee Times</span></Link>}{map.has('golf') && <Link href={`/workspace/${id}/golf`}><Flag /><span>Golf</span></Link>}</nav>}

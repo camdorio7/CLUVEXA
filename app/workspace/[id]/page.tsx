@@ -19,6 +19,7 @@ export default function Page() {
   const [memberRecord, setMemberRecord] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [upcoming, setUpcoming] = useState<any[]>([]);
+  const [roleLoaded, setRoleLoaded] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -38,7 +39,7 @@ export default function Page() {
       ]);
       setClub(clubResult.data); setProfile((profileResult as any).data);
       setCounts({ members: members.count, events: events.count, staff: staff.count, checkins: checkins.count, tasks: tasks.count, pending: pending.count });
-      const resolvedRole = (roleResult as any).data?.role || 'admin'; setRole(resolvedRole);
+      const resolvedRole = (roleResult as any).data?.role || ''; setRole(resolvedRole); setRoleLoaded(true);
       const { data: ev } = await sb.from('club_events').select('id,title,starts_at,location').eq('club_id', id).gte('starts_at', new Date().toISOString()).order('starts_at').limit(3);
       setUpcoming(ev || []);
       if (resolvedRole === 'member' && user) {
@@ -53,12 +54,14 @@ export default function Page() {
   const admin = ['owner', 'admin', 'super_admin'].includes(role);
   const firstName = (memberRecord?.full_name || profile?.full_name || '').split(' ')[0] || (member ? 'Member' : staffUser ? 'Team' : 'Administrator');
 
+  if (!roleLoaded || !role) return <div className="portalHome" role="status">{roleLoaded ? 'Your organization access could not be verified.' : 'Loading your organization workspace…'}</div>;
+
   return <div className="portalHome">
     <section className={`portalWelcome ${member ? 'memberWelcomeV43' : staffUser ? 'staffWelcomeV43' : 'adminWelcomeV43'}`}>
       <div className="portalWelcomeCopy">
-        <div className="eyebrow cyan">{member ? 'YOUR CLUB' : staffUser ? 'TEAM HOME' : 'CLUB MANAGEMENT'}</div>
+        <div className="eyebrow cyan">{member ? 'YOUR ORGANIZATION' : staffUser ? 'TEAM HOME' : 'ORGANIZATION MANAGEMENT'}</div>
         <h1>Welcome back, {firstName}.</h1>
-        <p>{club?.welcome_message || (member ? `Stay connected with ${club?.name || 'your club'}, manage your membership, and see what’s coming up.` : staffUser ? `Everything you need for today at ${club?.name || 'the club'}, right at your fingertips.` : `Run ${club?.name || 'your club'} with a clear view of members, operations, events and your team.`)}</p>
+        <p>{club?.welcome_message || (member ? `Stay connected with ${club?.name || 'your organization'}, access your services, and see what’s coming up.` : staffUser ? `Everything you need for today at ${club?.name || 'your organization'}, right at your fingertips.` : `Manage ${club?.name || 'your organization'} with a clear view of people, operations, events, and your team.`)}</p>
         <div className="portalWelcomeActions">
           {member && <><Link className="portalPrimaryAction" href={`/workspace/${id}/events`}><CalendarDays/> Explore events</Link><Link className="portalSecondaryAction" href={`/workspace/${id}/profile`}><UserRound/> My profile</Link></>}
           {admin && <CommandCenter id={id} role={role}/>}
