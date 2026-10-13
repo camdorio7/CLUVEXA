@@ -538,3 +538,64 @@ textarea,.field textarea,.memberJoinForm textarea{min-height:92px}
 .n10GolfHistory>div{display:flex;justify-content:space-between;gap:15px;padding:12px;border:1px solid #dce5de;border-radius:10px}
 .n10GolfMessage{padding:10px 0;font-size:13px}
 @media(max-width:700px){.n10GolfGrid{grid-template-columns:repeat(6,minmax(0,1fr))}.n10GolfForm{grid-template-columns:1fr 1fr}}
+
+
+/* NADORIO 10.0 release polish: consistent vertical workspace navigation.
+   Overrides the legacy admin horizontal masthead rules; scoped to workspaces only. */
+@media (min-width: 901px) {
+  .n9Layout:is(.lindexAdmin,.lindexStaff) {display:block!important;}
+  .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar {
+    display:flex!important;flex-direction:column!important;position:fixed!important;
+    inset:0 auto 0 0!important;width:272px!important;max-width:272px!important;
+    height:100dvh!important;min-height:100dvh!important;overflow-y:auto!important;
+    padding:22px 14px 18px!important;border-right:1px solid #ffffff1c!important;
+    background:linear-gradient(180deg,color-mix(in srgb,var(--club-primary) 72%,#09283d),color-mix(in srgb,var(--club-primary) 30%,#061b2b))!important;
+    z-index:40!important;
+  }
+  .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar>.clubBrand {display:flex!important;}
+  .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar>.sidefoot {display:block!important;}
+  .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Nav {display:block!important;margin:12px 0 0!important;padding:0 0 16px!important;}
+  .n9Layout:is(.lindexAdmin,.lindexStaff) .v3NavGroup {display:flex!important;flex-direction:column!important;align-items:stretch!important;margin-top:15px!important;gap:3px!important;}
+  .n9Layout:is(.lindexAdmin,.lindexStaff) .v3NavGroup>span {display:block!important;}
+  .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Nav a {display:flex!important;width:100%!important;min-height:40px!important;border:0!important;background:transparent!important;color:#f0f6fb!important;padding:10px 12px!important;}
+  .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Nav a:hover {background:#ffffff1c!important;}
+  .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Nav a.active {background:#ffffff2b!important;color:#fff!important;}
+  .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Main {margin-left:272px!important;padding:30px clamp(22px,3vw,44px) 70px!important;min-height:100dvh!important;}
+}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .n10CollapsibleNav {display:flex;flex-direction:column;align-items:stretch;gap:3px;width:100%;}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .n10GroupToggle {display:flex;width:100%;color:#f2f8fd!important;text-align:left;min-height:40px;padding:10px 12px;font-size:12px;font-weight:750;letter-spacing:.015em;}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .n10GroupToggle:hover {background:#ffffff20;}
+.n9Layout:is(.lindexAdmin,.lindexStaff) .n10CollapsibleNav>a {margin-left:8px;width:calc(100% - 8px)!important;}
+.n9Layout .v3Sidebar .v3NavGroup>span {color:#dbeaf2!important;opacity:.78;}
+.n9Layout .v3Sidebar .clubBrand span {color:#e2edf3!important;}
+.n9Layout .v3Sidebar .sidefoot {background:transparent!important;}
+.n9Layout .v3Main {background:#f4f7fa!important;color:#192a3a!important;}
+.n9Layout .v3Main h1,.n9Layout .v3Main h2,.n9Layout .v3Main h3 {color:#192a3a;}
+.n9Layout .portalHome {max-width:1240px!important;margin-inline:auto;}
+.n9Layout .portalWelcome {padding:24px 28px!important;gap:20px!important;min-height:0!important;border-radius:18px!important;}
+.n9Layout .portalWelcome h1 {font-size:clamp(25px,2.7vw,35px)!important;line-height:1.18!important;}
+.n9Layout .portalWelcome p {max-width:630px!important;font-size:14px!important;line-height:1.5!important;}
+.n9Layout .portalWelcomeSide {padding:15px!important;min-height:0!important;}
+.n9Layout .portalWelcomeSide .portalClubLogo {max-width:55px!important;max-height:55px!important;}
+.n9Layout.lindexMember .portalWelcomeSide {display:none!important;}
+.n9Layout.lindexMember .portalWelcome {grid-template-columns:minmax(0,1fr)!important;padding:24px 28px!important;}
+.n9Layout.lindexMember .portalWelcomeActions {margin-top:15px!important;}
+.n9Layout.lindexMember .memberLindexOverview {margin-top:15px!important;}
+.n9Layout.lindexMember .memberLindexIdentity,.n9Layout.lindexMember .memberLindexDetails {padding:18px 20px!important;}
+.n9Layout.lindexMember .memberLindexAvatar {width:58px!important;height:58px!important;font-size:19px!important;}
+.n9Layout.lindexMember .portalSectionTitle {margin-top:22px!important;}
+.n9Layout .portalActionGrid>a {min-height:95px!important;}
+.n9Layout .adminSectionSwitcher {margin:20px 0 14px!important;gap:12px!important;}
+.n9Layout .adminSectionTabs {gap:8px!important;}
+.n9Layout .adminSectionTabs button {padding:10px 13px!important;min-height:40px!important;}
+@media(max-width:900px){
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar {display:none!important;}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar.mobileOpen {display:flex!important;flex-direction:column!important;position:fixed!important;inset:0 auto 0 0!important;transform:none!important;width:min(86vw,320px)!important;max-width:320px!important;height:100dvh!important;overflow-y:auto!important;padding:78px 16px 24px!important;background:linear-gradient(180deg,color-mix(in srgb,var(--club-primary) 70%,#09283d),#0b2436)!important;}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar.mobileOpen .v3NavGroup {display:flex!important;flex-direction:column!important;align-items:stretch!important;}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar.mobileOpen .v3Nav a {display:flex!important;background:transparent!important;color:#fff!important;}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar.mobileOpen .clubBrand,.n9Layout:is(.lindexAdmin,.lindexStaff) .v3Sidebar.mobileOpen .sidefoot {display:block!important;}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3MobileHeader {position:fixed!important;top:0!important;left:0!important;right:0!important;z-index:90!important;}
+ .n9Layout:is(.lindexAdmin,.lindexStaff) .v3Main {margin-left:0!important;padding:84px 16px 75px!important;}
+ .n9Layout .portalWelcome {padding:20px!important;}
+ .n9Layout.lindexMember .portalWelcome {padding:20px!important;}
+}
