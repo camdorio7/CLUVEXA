@@ -84,10 +84,9 @@ export default function Page() {
         <p>{club?.welcome_message || (member ? `Stay connected with ${club?.name || 'your organization'}, access your services, and see what’s coming up.` : staffUser ? `Everything you need for today at ${club?.name || 'your organization'}, right at your fingertips.` : `Manage ${club?.name || 'your organization'} with a clear view of people, operations, events, and your team.`)}</p>
         <div className="portalWelcomeActions">
           {member && <>{hasModule('events') && <Link className="portalPrimaryAction" href={`/workspace/${id}/events`}><CalendarDays/> Explore events</Link>}<Link className="portalSecondaryAction" href={`/workspace/${id}/profile`}><UserRound/> My profile</Link></>}
-          {admin && <CommandCenter id={id} role={role}/>}
 
     {staffUser && <><Link className="portalPrimaryAction" href={`/workspace/${id}/staff`}><Clock3/> Open time clock</Link><Link className="portalSecondaryAction" href={`/workspace/${id}/operations`}><ClipboardCheck/> Today's operations</Link></>}
-          {admin && <><Link className="portalPrimaryAction" href={`/workspace/${id}/people`}><UserRoundPlus/> Review approvals</Link><Link className="portalSecondaryAction" href={`/workspace/${id}/members`}><UsersRound/> Members</Link></>}
+
         </div>
       </div>
       <div className="portalWelcomeSide">
@@ -110,7 +109,7 @@ export default function Page() {
       <div className="portalActionGrid memberActionGrid">
         <Link href={`/workspace/${id}/card`}><span className="portalActionIcon"><CreditCard/></span><div><b>Membership Card</b><p>Your digital member ID and membership standing</p></div><ArrowRight/></Link><Link href={`/workspace/${id}/profile`}><span className="portalActionIcon"><UserRound/></span><div><b>My Profile</b><p>Membership, contact details and account settings</p></div><ArrowRight/></Link>
         {hasModule('events') && <Link href={`/workspace/${id}/events`}><span className="portalActionIcon"><CalendarDays/></span><div><b>Events</b><p>See what’s happening and plan your next visit</p></div><ArrowRight/></Link>}
-        {hasModule('tee_sheet') && <Link href={`/workspace/${id}/tee-sheet`}><span className="portalActionIcon"><Clock3/></span><div><b>Tee Times</b><p>View available tee times and scheduling</p></div><ArrowRight/></Link>}
+        {hasModule('golf') && <Link href={`/workspace/${id}/scorecard`}><span className="portalActionIcon"><Flag/></span><div><b>My Scorecard</b><p>Record your rounds and hole-by-hole scores</p></div><ArrowRight/></Link>}{hasModule('golf') && <Link href={`/workspace/${id}/golf-index`}><span className="portalActionIcon"><Flag/></span><div><b>My Golf Index</b><p>Review your recorded scoring trends</p></div><ArrowRight/></Link>}{hasModule('tee_sheet') && <Link href={`/workspace/${id}/tee-sheet`}><span className="portalActionIcon"><Clock3/></span><div><b>Tee Times</b><p>View available tee times and scheduling</p></div><ArrowRight/></Link>}
         {hasModule('directory') && <Link href={`/workspace/${id}/directory`}><span className="portalActionIcon"><UsersRound/></span><div><b>Member Directory</b><p>Stay connected with your organization community</p></div><ArrowRight/></Link>}
         {hasModule('access') && <Link href={`/workspace/${id}/access`}><span className="portalActionIcon"><WalletCards/></span><div><b>Access & Guests</b><p>Guest privileges, passes and organization access</p></div><ArrowRight/></Link>}
         <Link href={`/workspace/${id}/household`}><span className="portalActionIcon"><UsersRound/></span><div><b>My Household</b><p>Manage people connected to your membership</p></div><ArrowRight/></Link><Link href={`/workspace/${id}/notifications`}><span className="portalActionIcon"><Bell/></span><div><b>Notifications</b><p>Reminders, announcements and organization alerts</p></div><ArrowRight/></Link>{hasModule('communications') && <Link href={`/workspace/${id}/communications`}><span className="portalActionIcon"><Megaphone/></span><div><b>Organization Updates</b><p>Announcements and important organization information</p></div><ArrowRight/></Link>}

@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { useParams, usePathname, useRouter } from 'next/navigation';
-import { Building2, Bell, CalendarDays, Clock3, CreditCard, Flag, Home, LogOut, Menu, Settings, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react';
+import { Building2, Bell, CalendarDays, ChevronDown, Clock3, CreditCard, Flag, Home, LogOut, Menu, Settings, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react';
 import { createClient } from '../lib/supabase/client';
 import NadorioLogo from './NadorioLogo';
 import { organizationTheme } from '../lib/organization-theme';
@@ -37,6 +37,7 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
   const [mods, setMods] = useState<any[]>([]);
   const [ready, setReady] = useState(false);
   const [mobile, setMobile] = useState(false);
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     // Next.js prefetches visible links on demand; avoid preloading every module.
@@ -97,11 +98,35 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
         <nav className="nav v3Nav">
           {club.organization_type && club.organization_type !== 'private_club' && <Link className={path === `/workspace/${id}/industry` ? 'active' : ''} href={`/workspace/${id}/industry`} onClick={closeMobile}><Building2 size={18}/> Industry Hub</Link>}<Link aria-current={path === `/workspace/${id}` ? 'page' : undefined} className={`v3NavHome ${path === `/workspace/${id}` ? 'active' : ''}`} href={`/workspace/${id}`} onClick={closeMobile}><Home size={18} /> Home</Link>
           {member ? (
-            <><div className="v3NavGroup"><span>MY ACCOUNT</span><Link aria-current={path === `/workspace/${id}/profile` ? 'page' : undefined} className={path === `/workspace/${id}/profile` ? 'active' : ''} href={`/workspace/${id}/profile`} onClick={closeMobile}><UserRound size={16}/> My Profile</Link><Link className={path === `/workspace/${id}/directory` ? 'active' : ''} href={`/workspace/${id}/directory`} onClick={closeMobile}><UsersRound size={16}/> Member Directory</Link><Link className={path === `/workspace/${id}/card` ? 'active' : ''} href={`/workspace/${id}/card`} onClick={closeMobile}><CreditCard size={16}/> Membership Card</Link><Link className={path === `/workspace/${id}/household` ? 'active' : ''} href={`/workspace/${id}/household`} onClick={closeMobile}><UsersRound size={16}/> My Household</Link><Link className={path === `/workspace/${id}/notifications` ? 'active' : ''} href={`/workspace/${id}/notifications`} onClick={closeMobile}><Bell size={16}/> Notifications</Link></div><div className="v3NavGroup"><span>MY ORGANIZATION</span>{['events', 'tee_sheet', 'amenities', 'reservations', 'documents', 'communications'].filter(k => map.has(k)).map(k => { const [s, l] = defs[k]; return <Link key={k} className={path === `/workspace/${id}${s}` ? 'active' : ''} href={`/workspace/${id}${s}`} onClick={closeMobile}>{l}</Link>; })}</div></>
+            <>
+              <div className="v3NavGroup"><span>MY ACCOUNT</span>
+                <Link className={path.endsWith('/profile') ? 'active' : ''} href={`/workspace/${id}/profile`} onClick={closeMobile}><UserRound size={16}/> My Profile</Link>
+                <Link className={path.endsWith('/card') ? 'active' : ''} href={`/workspace/${id}/card`} onClick={closeMobile}><CreditCard size={16}/> Membership Card</Link>
+                <Link className={path.endsWith('/household') ? 'active' : ''} href={`/workspace/${id}/household`} onClick={closeMobile}><UsersRound size={16}/> My Household</Link>
+                <Link className={path.endsWith('/notifications') ? 'active' : ''} href={`/workspace/${id}/notifications`} onClick={closeMobile}><Bell size={16}/> Notifications</Link>
+                <Link className={path.endsWith('/directory') ? 'active' : ''} href={`/workspace/${id}/directory`} onClick={closeMobile}><UsersRound size={16}/> Member Directory</Link>
+              </div>
+              {map.has('golf') && <div className="v3NavGroup"><span>GOLF & SCORING</span>
+                <Link className={path.endsWith('/scorecard') ? 'active' : ''} href={`/workspace/${id}/scorecard`} onClick={closeMobile}><Flag size={16}/> My Scorecard</Link>
+                <Link className={path.endsWith('/golf-index') ? 'active' : ''} href={`/workspace/${id}/golf-index`} onClick={closeMobile}><Flag size={16}/> My Golf Index</Link>
+                <Link className={path.endsWith('/golf') ? 'active' : ''} href={`/workspace/${id}/golf`} onClick={closeMobile}><Flag size={16}/> Golf & Tournaments</Link>
+              </div>}
+              {['events','tee_sheet','amenities','reservations','documents','communications','access'].some(k => map.has(k)) && <div className="v3NavGroup"><span>CLUB SERVICES</span>
+                {['events','tee_sheet','amenities','reservations','documents','communications','access'].filter(k => map.has(k)).map(k => {const [s,l] = defs[k]; return <Link key={k} className={path === `/workspace/${id}${s}` ? 'active' : ''} href={`/workspace/${id}${s}`} onClick={closeMobile}>{map.get(k)?.nav_label || l}</Link>;})}
+              </div>}
+            </>
           ) : (
             <>
-              {admin && <div className="v3NavGroup"><span>MEMBER MANAGEMENT</span><Link className={path === `/workspace/${id}/people` ? 'active' : ''} href={`/workspace/${id}/people`} onClick={closeMobile}><ShieldCheck size={16} /> People & Approvals</Link></div>}
-              {groups.map(g => { const items = g.keys.filter(k => map.has(k)); if (!items.length) return null; return <div className="v3NavGroup" key={g.label}><span>{g.label.toUpperCase()}</span>{items.map(k => { const [s, l] = defs[k]; const mod: any = map.get(k); return <Link key={k} className={path === `/workspace/${id}${s}` ? 'active' : ''} href={`/workspace/${id}${s}`} onClick={closeMobile}>{mod?.nav_label || l}</Link>; })}</div>; })}
+              {admin && <div className="v3NavGroup"><span>PEOPLE & APPROVALS</span><Link className={path.endsWith('/people') ? 'active' : ''} href={`/workspace/${id}/people`} onClick={closeMobile}><ShieldCheck size={16}/> Review Applications</Link></div>}
+              {groups.map(g => { const items = g.keys.filter(k => map.has(k)); if (!items.length) return null;
+                const expanded = openGroups[g.label] ?? items.some(k => path === `/workspace/${id}${defs[k][0]}`);
+                return <div className="v3NavGroup n10CollapsibleNav" key={g.label}>
+                  <button type="button" className="n10GroupToggle" aria-expanded={expanded} onClick={() => setOpenGroups(v => ({...v,[g.label]:!expanded}))}>
+                    <span>{g.label}</span><ChevronDown size={15} className={expanded ? 'n10Rotated' : ''}/>
+                  </button>
+                  {expanded && items.map(k => { const [s,l] = defs[k]; const mod: any = map.get(k); return <Link key={k} className={path === `/workspace/${id}${s}` ? 'active' : ''} href={`/workspace/${id}${s}`} onClick={closeMobile}>{mod?.nav_label || l}</Link>; })}
+                </div>;
+              })}
             </>
           )}
           {admin && <div className="v3NavGroup"><span>ADMINISTRATION</span><Link className={path === `/workspace/${id}/settings` ? 'active' : ''} href={`/workspace/${id}/settings`} onClick={closeMobile}><Settings size={16} /> Organization Settings</Link><Link className={path === `/workspace/${id}/audit` ? 'active' : ''} href={`/workspace/${id}/audit`} onClick={closeMobile}><ShieldCheck size={16}/> Audit & Security</Link></div>}
@@ -112,7 +137,7 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
         {!member && <div className="n9WorkspaceIntro"><div><span>{admin ? 'ADMINISTRATOR TOOLS' : 'YOUR WORKSPACE'}</span><h1>{admin ? 'Organization Administration' : 'Staff Workspace'}</h1><p>{admin ? 'Your organization, your team, and the day ahead.' : 'Everything you need for your shift and daily operations.'}</p></div></div>}
         {children}
       </main>
-      {member && <nav className="memberBottomNav"><Link href={`/workspace/${id}`}><Home /><span>Home</span></Link><Link href={`/workspace/${id}/card`}><CreditCard/><span>Card</span></Link><Link href={`/workspace/${id}/notifications`}><Bell/><span>Alerts</span></Link><Link href={`/workspace/${id}/profile`}><UserRound/><span>Profile</span></Link>{map.has('events') && <Link href={`/workspace/${id}/events`}><CalendarDays /><span>Events</span></Link>}{map.has('tee_sheet') && <Link href={`/workspace/${id}/tee-sheet`}><Clock3 /><span>Tee Times</span></Link>}{map.has('golf') && <Link href={`/workspace/${id}/golf`}><Flag /><span>Golf</span></Link>}</nav>}
+      {member && <nav className="memberBottomNav"><Link href={`/workspace/${id}`}><Home /><span>Home</span></Link><Link href={`/workspace/${id}/card`}><CreditCard/><span>Card</span></Link><Link href={`/workspace/${id}/notifications`}><Bell/><span>Alerts</span></Link><Link href={`/workspace/${id}/profile`}><UserRound/><span>Profile</span></Link>{map.has('events') && <Link href={`/workspace/${id}/events`}><CalendarDays /><span>Events</span></Link>}{map.has('tee_sheet') && <Link href={`/workspace/${id}/tee-sheet`}><Clock3 /><span>Tee Times</span></Link>}{map.has('golf') && <Link href={`/workspace/${id}/scorecard`}><Flag /><span>Scores</span></Link>}</nav>}
     </div>
   );
 }
