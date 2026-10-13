@@ -1,0 +1,1 @@
+Replace app/workspace/[id]/page.tsx only. No SQL or environment changes. This aligns the dashboard role check with WorkspaceShell for platform super admins and active organization users. Test with platform owner, org admin, staff, member and unassigned user.

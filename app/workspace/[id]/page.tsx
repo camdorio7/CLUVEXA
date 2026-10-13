@@ -20,13 +20,15 @@ export default function Page() {
   const [profile, setProfile] = useState<any>(null);
   const [upcoming, setUpcoming] = useState<any[]>([]);
   const [roleLoaded, setRoleLoaded] = useState(false);
+  const [roleError, setRoleError] = useState('');
 
   useEffect(() => {
     (async () => {
       const sb = createClient();
       const today = new Date(); today.setHours(0, 0, 0, 0);
-      const { data: { user } } = await sb.auth.getUser();
-      const [clubResult, members, events, staff, checkins, tasks, pending, roleResult, profileResult] = await Promise.all([
+      const { data: { user }, error: authError } = await sb.auth.getUser();
+      if (authError || !user) { setRoleError('Your session could not be verified. Please sign in again.'); setRoleLoaded(true); return; }
+      const [clubResult, members, events, staff, checkins, tasks, pending, roleResult, profileResult, superResult] = await Promise.all([
         sb.from('clubs').select('*').eq('id', id).single(),
         sb.from('members').select('*', { count: 'exact', head: true }).eq('club_id', id).eq('status', 'active'),
         sb.from('club_events').select('*', { count: 'exact', head: true }).eq('club_id', id).gte('starts_at', new Date().toISOString()),
@@ -34,12 +36,23 @@ export default function Page() {
         sb.from('access_log').select('*', { count: 'exact', head: true }).eq('club_id', id).gte('checked_in_at', today.toISOString()),
         sb.from('operational_tasks').select('*', { count: 'exact', head: true }).eq('club_id', id).neq('status', 'complete'),
         sb.from('member_join_requests').select('*', { count: 'exact', head: true }).eq('club_id', id).eq('status', 'pending'),
-        user ? sb.from('club_users').select('role').eq('club_id', id).eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
-        user ? sb.from('profiles').select('full_name,email').eq('id', user.id).maybeSingle() : Promise.resolve({ data: null }),
+        user ? sb.from('club_users').select('role,active').eq('club_id', id).eq('user_id', user.id).maybeSingle() : Promise.resolve({ data: null }),
+        sb.from('profiles').select('full_name,email,platform_role').eq('id', user.id).maybeSingle(),
+        sb.rpc('is_super_admin'),
       ]);
       setClub(clubResult.data); setProfile((profileResult as any).data);
       setCounts({ members: members.count, events: events.count, staff: staff.count, checkins: checkins.count, tasks: tasks.count, pending: pending.count });
-      const resolvedRole = (roleResult as any).data?.role || ''; setRole(resolvedRole); setRoleLoaded(true);
+      // Match WorkspaceShell's authorization rules: platform owners may have no club_users row.
+      const isPlatformAdmin = superResult.data === true || (profileResult as any).data?.platform_role === 'super_admin';
+      const assignedRole = (roleResult as any).data?.role || '';
+      const assignedActive = (roleResult as any).data?.active === true;
+      const resolvedRole = isPlatformAdmin ? 'super_admin' : (assignedActive ? assignedRole : '');
+      if (!resolvedRole) {
+        setRoleError(roleResult.error
+          ? 'We could not check your organization access. Please refresh and try again.'
+          : 'Your account does not have an active role in this organization. Ask an organization administrator to check your access.');
+      } else { setRoleError(''); }
+      setRole(resolvedRole); setRoleLoaded(true);
       const { data: ev } = await sb.from('club_events').select('id,title,starts_at,location').eq('club_id', id).gte('starts_at', new Date().toISOString()).order('starts_at').limit(3);
       setUpcoming(ev || []);
       if (resolvedRole === 'member' && user) {
@@ -54,7 +67,7 @@ export default function Page() {
   const admin = ['owner', 'admin', 'super_admin'].includes(role);
   const firstName = (memberRecord?.full_name || profile?.full_name || '').split(' ')[0] || (member ? 'Member' : staffUser ? 'Team' : 'Administrator');
 
-  if (!roleLoaded || !role) return <div className="portalHome" role="status">{roleLoaded ? 'Your organization access could not be verified.' : 'Loading your organization workspace…'}</div>;
+  if (!roleLoaded || !role) return <div className="portalHome" role="status">{roleLoaded ? roleError || 'Your organization access could not be verified.' : 'Loading your organization workspace…'}</div>;
 
   return <div className="portalHome">
     <section className={`portalWelcome ${member ? 'memberWelcomeV43' : staffUser ? 'staffWelcomeV43' : 'adminWelcomeV43'}`}>
