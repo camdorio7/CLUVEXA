@@ -78,7 +78,7 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
   if (!ready || !club) return <main className="workspaceBoot" aria-label="Opening workspace" />;
 
   return (
-    <div className="workspace v3workspace" style={{ '--club-primary': club.primary_color || '#138cff', '--club-accent': club.secondary_color || '#19d9e8', '--club-bg': club.background_color || '#07111f', '--club-surface': club.surface_color || '#0d1b2a', '--club-text': club.text_color || '#f4f8ff' } as React.CSSProperties}>
+    <div className={`workspace v3workspace lindexInspired ${member ? 'lindexMember' : admin ? 'lindexAdmin' : 'lindexStaff'}`} style={{ '--club-primary': '#15523e', '--club-accent': '#b99b4b', '--club-bg': '#f3f5f1', '--club-surface': '#ffffff', '--club-text': '#18372b' } as React.CSSProperties}>
       <header className="v3MobileHeader">
         <div className="clubBrand mini">{club.logo_url ? <img src={club.logo_url} alt="" /> : <div className="clubMark">{club.name.slice(0, 2).toUpperCase()}</div>}<b>{club.name}</b></div>
         <button type="button" onClick={() => setMobile(!mobile)} aria-label={mobile ? "Close navigation" : "Open navigation"} aria-expanded={mobile} aria-controls="nadorio-workspace-navigation">{mobile ? <X /> : <Menu />}</button>
@@ -98,7 +98,7 @@ export default function WorkspaceShell({ children }: { children: React.ReactNode
           )}
           {admin && <div className="v3NavGroup"><span>ADMINISTRATION</span><Link className={path === `/workspace/${id}/settings` ? 'active' : ''} href={`/workspace/${id}/settings`} onClick={closeMobile}><Settings size={16} /> Organization Settings</Link><Link className={path === `/workspace/${id}/audit` ? 'active' : ''} href={`/workspace/${id}/audit`} onClick={closeMobile}><ShieldCheck size={16}/> Audit & Security</Link></div>}
         </nav>
-        <div className="sidefoot"><NadorioLogo /><div className="version">NADORIO 9.0 Alpha 2 · {role.replace('_', ' ')}</div><button className="signout" onClick={out}><LogOut size={15} /> Sign out</button></div>
+        <div className="sidefoot"><NadorioLogo /><div className="version">NADORIO 9.0 · {role.replace('_', ' ')}</div><a className="lindexCd7Credit" href="https://cd7technologies.com" target="_blank" rel="noopener noreferrer">Powered by <strong>CD7 Technologies LLC</strong></a><button className="signout" onClick={out}><LogOut size={15} /> Sign out</button></div>
       </aside>
       <main className="main clubMain v3Main">{children}</main>
       {member && <nav className="memberBottomNav"><Link href={`/workspace/${id}`}><Home /><span>Home</span></Link><Link href={`/workspace/${id}/card`}><CreditCard/><span>Card</span></Link><Link href={`/workspace/${id}/notifications`}><Bell/><span>Alerts</span></Link><Link href={`/workspace/${id}/profile`}><UserRound/><span>Profile</span></Link>{map.has('events') && <Link href={`/workspace/${id}/events`}><CalendarDays /><span>Events</span></Link>}{map.has('tee_sheet') && <Link href={`/workspace/${id}/tee-sheet`}><Clock3 /><span>Tee Times</span></Link>}{map.has('golf') && <Link href={`/workspace/${id}/golf`}><Flag /><span>Golf</span></Link>}</nav>}

@@ -271,3 +271,101 @@ textarea,.field textarea,.memberJoinForm textarea{min-height:92px}
 
 /* NADORIO 9.0 Alpha: universal organization management */
 .n9Overview{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px;margin:20px 0}.n9Overview>div{border:1px solid #203a57;background:linear-gradient(135deg,#0d1d30,#0a1523);padding:19px;border-radius:17px;display:flex;flex-direction:column;gap:7px}.n9Overview strong{font-size:28px;line-height:1.2}.n9Overview span{font-size:13px;color:#91a7bf}.n9Filters{display:flex;flex-wrap:wrap;gap:14px;align-items:start;margin:18px 0}.n9Filters .toolbar{flex:1 1 260px;max-width:none;margin:0;min-height:46px}.n9StatusFilter{display:flex;gap:10px;align-items:center;color:#aebfd2;font-size:13px}.n9StatusFilter select{background:#0b1625;color:#fff;border:1px solid #28415c;border-radius:10px;padding:12px;min-height:46px}.n9Empty{border:1px dashed #28415c;border-radius:16px;padding:32px;text-align:center;color:#9bb0c7}.v6Steps button:disabled{opacity:.38;cursor:not-allowed}.v6Steps button:focus-visible,.n9StatusFilter select:focus-visible{outline:2px solid #37b9ff;outline-offset:3px}@media(max-width:650px){.n9Overview{grid-template-columns:1fr 1fr}.n9Overview>div:first-child{grid-column:1/-1}.n9Filters{flex-direction:column}.n9Filters .toolbar,.n9StatusFilter{width:100%;flex-basis:auto}.n9StatusFilter select{flex:1;min-width:0}}
+
+
+/* NADORIO 9.0 — LINDEX-inspired unified portal styling.
+   Scoped to workspace portals only; platform-owner and public pages are unchanged. */
+.workspace.lindexInspired {
+  --lindex-green:#124b39; --lindex-deep:#0d362a; --lindex-gold:#b79842;
+  --lindex-paper:#f3f5f1; --lindex-border:#dce5de;
+  background:var(--lindex-paper); color:#18372b;
+  font-family:Inter,ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+.lindexInspired .v3Sidebar {
+  width:272px; background:linear-gradient(180deg,#124b39 0%,#0c3327 100%);
+  border-right:1px solid #0b3024; padding:24px 14px 20px;
+  box-shadow:4px 0 22px rgba(16,49,34,.07);
+}
+.lindexInspired .v3Sidebar .clubBrand {padding:10px 9px 22px;gap:12px;border-bottom:1px solid #ffffff22;}
+.lindexInspired .v3Sidebar .clubBrand b {color:#fff;font-size:15px;line-height:1.35;overflow-wrap:anywhere;}
+.lindexInspired .v3Sidebar .clubBrand span {color:#d1e4d7;opacity:.85;font-size:11px;}
+.lindexInspired .v3Sidebar .clubBrand img,.lindexInspired .v3Sidebar .clubMark {background:#fff;border-radius:12px;}
+.lindexInspired .v3Nav {margin-top:12px;padding-bottom:16px;}
+.lindexInspired .v3NavGroup {margin-top:19px;}
+.lindexInspired .v3NavGroup>span {color:#d9c486;font-size:10px;letter-spacing:.13em;padding:0 12px 8px;}
+.lindexInspired .v3Nav a {color:#e3eee6!important;border:1px solid transparent!important;border-radius:11px!important;min-height:44px;padding:11px 12px!important;font-size:13px;font-weight:550;transition:background .15s,border-color .15s;}
+.lindexInspired .v3Nav a:hover {background:#ffffff18!important;color:#fff!important;}
+.lindexInspired .v3Nav a.active {background:#ffffff22!important;color:#fff!important;border-color:#d4bb7059!important;box-shadow:inset 3px 0 0 #d8bd6a;}
+.lindexInspired .v3Sidebar .sidefoot {margin-top:auto;border-top:1px solid #ffffff24;padding:18px 9px 8px;}
+.lindexInspired .v3Sidebar .version {color:#d3e4d8;font-size:11px;line-height:1.6;}
+.lindexInspired .v3Sidebar .signout {color:#fff;min-height:44px;}
+.lindexInspired .lindexCd7Credit {display:block;margin-top:10px;color:#d7e5dc;font-size:10px;line-height:1.5;text-decoration:none;}
+.lindexInspired .lindexCd7Credit strong {color:#e6ce87;font-weight:650;}
+.lindexInspired .v3Main {margin-left:272px;max-width:none;padding:34px clamp(20px,3vw,44px) 76px;color:#18372b;background:#f3f5f1;min-width:0;}
+.lindexInspired .v3Main>*,.lindexInspired .v3Main section {min-width:0;}
+.lindexInspired .v3Main h1,.lindexInspired .v3Main h2,.lindexInspired .v3Main h3 {color:#153f30;letter-spacing:-.025em;}
+.lindexInspired .v3Hero,.lindexInspired .portalWelcome,.lindexInspired .memberWelcome,.lindexInspired .v8CommandCenter {
+  background:linear-gradient(120deg,#103e30,#17634a)!important;color:#fff!important;
+  border:1px solid #17523e!important;border-radius:22px!important;box-shadow:0 12px 32px #16412f16;
+}
+.lindexInspired .v3Hero h1,.lindexInspired .v3Hero h2,.lindexInspired .v3Hero p,
+.lindexInspired .portalWelcome h1,.lindexInspired .portalWelcome h2,.lindexInspired .portalWelcome p,
+.lindexInspired .memberWelcome h1,.lindexInspired .memberWelcome p,
+.lindexInspired .v8CommandCenter h2 {color:#fff!important;}
+.lindexInspired .v3HeroBadge {border-color:#ffffff55;color:#fff;}
+.lindexInspired .v3HeroBadge b {color:#efd78f;}
+.lindexInspired .v3Section,.lindexInspired .v3Metrics .metric,.lindexInspired .panel,
+.lindexInspired .card,.lindexInspired .v5Card,.lindexInspired .v6Card,
+.lindexInspired .portalMetricGrid>*,.lindexInspired .portalActionGrid>a {
+  background:#fff!important;color:#1d392d!important;border:1px solid var(--lindex-border)!important;
+  border-radius:18px!important;box-shadow:0 6px 22px #143e2c09;
+}
+.lindexInspired .v3SectionHead {border-bottom:1px solid #e7ece7;}
+.lindexInspired .v3SectionHead h2,.lindexInspired .v3Metrics .metric b {color:#164632;}
+.lindexInspired .v3SectionHead p,.lindexInspired .v3Metrics .metric span {color:#5e7367;}
+.lindexInspired .v3Metrics .metric svg,.lindexInspired .quickGrid a>svg:first-child {color:#b79842;}
+.lindexInspired .quickGrid a {background:#f7f9f6;border:1px solid #e0e8e0;color:#1d3f30;border-radius:13px;}
+.lindexInspired .quickGrid a>svg:first-child {background:#eaf1e9;}
+.lindexInspired .statusLine,.lindexInspired .approvalRow,.lindexInspired .peopleRow {border-bottom:1px solid #e4ebe4;color:#284c3a;}
+.lindexInspired .approvalAvatar {background:#eaf1e9;color:#15523e;}
+.lindexInspired .declineButton {background:#edf1ec;color:#214634;}
+.lindexInspired .approveButton {background:#15523e;color:#fff;}
+.lindexInspired .v3Main input,.lindexInspired .v3Main select,.lindexInspired .v3Main textarea {
+  background:#fff!important;color:#1a3c2c!important;border:1px solid #cddbd0!important;
+  border-radius:10px;min-height:44px;max-width:100%;font-size:16px;
+}
+.lindexInspired .v3Main input:focus-visible,.lindexInspired .v3Main select:focus-visible,
+.lindexInspired .v3Main textarea:focus-visible,.lindexInspired .v3Main button:focus-visible,
+.lindexInspired .v3Nav a:focus-visible {outline:3px solid #b79842;outline-offset:2px;}
+.lindexInspired .v3Main .button.gradient {background:#15523e!important;color:#fff!important;border-color:#15523e!important;}
+.lindexInspired .v3Main button {max-width:100%;}
+.lindexInspired .v3Main table {width:100%;}
+.lindexInspired .v3Main .tableWrap,.lindexInspired .v3Main .tableScroll {max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch;}
+.lindexInspired .memberBottomNav {background:#fff;border-top:1px solid #dce5de;box-shadow:0 -5px 20px #153e2a12;}
+.lindexInspired .memberBottomNav a {color:#365a47;}
+.lindexInspired .memberBottomNav a:hover {color:#124b39;}
+@media (max-width:900px) {
+  .lindexInspired .v3Main {margin-left:0;padding:calc(82px + env(safe-area-inset-top)) 18px calc(90px + env(safe-area-inset-bottom));}
+  .lindexInspired .v3MobileHeader {background:#124b39;color:#fff;border-bottom:1px solid #d8bd6a44;padding-left:max(16px,env(safe-area-inset-left));padding-right:max(16px,env(safe-area-inset-right));}
+  .lindexInspired .v3MobileHeader .clubBrand b {color:#fff;}
+  .lindexInspired .v3Sidebar {width:min(86vw,310px);max-width:310px;}
+  .lindexInspired .v3Sidebar.mobileOpen {box-shadow:16px 0 50px #051b1360;}
+  .lindexInspired .v3Hero {padding:24px 20px;}
+  .lindexInspired .v3HomeGrid {grid-template-columns:minmax(0,1fr);}
+}
+@media (max-width:600px) {
+  .lindexInspired .v3Main {padding-left:14px;padding-right:14px;}
+  .lindexInspired .v3PageHead {flex-direction:column;align-items:stretch;}
+  .lindexInspired .v3PageHead h1,.lindexInspired .v3Hero h1 {font-size:clamp(25px,7vw,32px);}
+  .lindexInspired .v3Metrics {grid-template-columns:repeat(2,minmax(0,1fr))!important;gap:10px;}
+  .lindexInspired .v3Metrics .metric {padding:15px;}
+  .lindexInspired .v3Metrics .metric b {font-size:23px;}
+  .lindexInspired .quickGrid {grid-template-columns:1fr;}
+  .lindexInspired .v3SectionHead {padding:16px;flex-wrap:wrap;}
+  .lindexInspired .approvalRow {grid-template-columns:42px minmax(0,1fr);}
+  .lindexInspired .approvalActions {grid-column:1/-1;display:flex;flex-wrap:wrap;}
+  .lindexInspired .approvalActions>* {flex:1;min-height:44px;}
+  .lindexInspired .peopleRow {grid-template-columns:minmax(0,1fr);}
+  .lindexInspired .v3Main .panel,.lindexInspired .v3Main .card {padding:16px;}
+}
+@media(prefers-reduced-motion:reduce){.lindexInspired .v3Nav a{transition:none}}
