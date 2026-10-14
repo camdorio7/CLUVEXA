@@ -76,6 +76,7 @@ export default function Shell({ children }: { children: React.ReactNode }) {
     );
   return (
     <PortalFrame
+      appearance="platform"
       name="NADORIO"
       subtitle="CD7 Platform Owner"
       logo="/cd7-technologies.png"

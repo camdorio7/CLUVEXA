@@ -14,6 +14,7 @@ export default function PortalFrame({
   onSignOut,
   theme,
   footer,
+  appearance = "organization",
 }: {
   name: string;
   subtitle: string;
@@ -23,6 +24,7 @@ export default function PortalFrame({
   onSignOut: () => void;
   theme?: CSSProperties;
   footer?: ReactNode;
+  appearance?: "organization" | "platform";
 }) {
   const path = usePathname();
   const [open, setOpen] = useState(false);
@@ -47,7 +49,10 @@ export default function PortalFrame({
     </Link>
   );
   return (
-    <div className={styles.shell} style={theme}>
+    <div
+      className={`${styles.shell} ${appearance === "platform" ? styles.platform : ""}`}
+      style={theme}
+    >
       <header className={styles.mobile}>
         <b>{name}</b>
         <button
