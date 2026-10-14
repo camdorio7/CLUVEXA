@@ -161,8 +161,66 @@ createServer(async (req, res) => {
     data = clubId;
   } else if (url.pathname === "/rest/v1/rpc/is_super_admin") {
     data = persona === "super";
-  } else if (url.pathname === "/rest/v1/rpc/v11_event_counts") {
-    data = [];
+  } else if (url.pathname === "/rest/v1/rpc/v12_health") {
+    data = { schema: 12, database: true };
+  } else if (url.pathname === "/rest/v1/rpc/v12_onboarding") {
+    data = {
+      identity: true,
+      administrator: true,
+      modules: true,
+      branding: false,
+      members: false,
+      website: false,
+      billing: "unconfigured",
+      recorded: {},
+    };
+  } else if (url.pathname === "/rest/v1/rpc/v12_import_members") {
+    data = {
+      valid: input.rows_json?.every((r) => !!r.full_name),
+      errors: [],
+      count: input.rows_json?.length,
+      imported: input.dry_run ? 0 : input.rows_json?.length,
+    };
+  } else if (url.pathname === "/rest/v1/site_drafts") {
+    data = [
+      {
+        club_id: clubId,
+        version: 0,
+        data: {
+          title: "Private draft title",
+          about: "Draft introduction",
+          services: [],
+          pages: [],
+          tagline: "",
+          contact_email: "",
+          phone: "",
+          address: "",
+          hero_image_url: "",
+        },
+      },
+    ];
+  } else if (url.pathname === "/rest/v1/organization_sites") {
+    data = [{ club_id: clubId, title: "Public title", published: true }];
+  } else if (url.pathname === "/rest/v1/rpc/v12_save_site") {
+    data = {
+      version: input.expected_version + 1,
+      data: input.content,
+      published: true,
+    };
+  } else if (url.pathname === "/rest/v1/rpc/v12_publish_announcement") {
+    data = { announcementId: "announcement-1" };
+  } else if (
+    ["/rest/v1/rpc/v11_event_counts", "/rest/v1/rpc/v12_event_counts"].includes(
+      url.pathname,
+    )
+  ) {
+    data = [
+      {
+        event_id: "50000000-0000-0000-0000-000000000001",
+        registered: 1,
+        waiting: 0,
+      },
+    ];
   } else if (url.pathname === "/rest/v1/rpc/v11_public_site") {
     data = {
       club_id: clubId,
@@ -257,6 +315,19 @@ createServer(async (req, res) => {
             },
           ]
         : [];
+  } else if (url.pathname === "/rest/v1/club_events") {
+    data = [
+      {
+        id: "50000000-0000-0000-0000-000000000001",
+        club_id: clubId,
+        title: "Club social evening",
+        starts_at: new Date(Date.now() + 86400000).toISOString(),
+        capacity: 1,
+        description: "Meet other members",
+        location: "Clubhouse",
+        status: "published",
+      },
+    ];
   } else if (url.pathname === "/rest/v1/operational_tasks") {
     data = [
       {

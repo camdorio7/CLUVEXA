@@ -25,12 +25,14 @@ export function PublicOrganizationSite({
   club,
   site,
   active,
+  preview = false,
   children,
 }: {
   id: string;
   club: PublicClubData | null;
   site: PublicSiteData;
   active?: string;
+  preview?: boolean;
   children: ReactNode;
 }) {
   const pages = (Array.isArray(site.pages) ? site.pages : []).filter(
@@ -60,7 +62,7 @@ export function PublicOrganizationSite({
         <div className={styles.headerInner}>
           <Link
             className={styles.brand}
-            href={`/site/${id}`}
+            href={preview ? "#" : `/site/${id}`}
             aria-label={`${club?.name || site.title} home`}
           >
             {club?.logo_url && (
@@ -68,7 +70,18 @@ export function PublicOrganizationSite({
             )}
             <span>{club?.name || site.title}</span>
           </Link>
-          <PublicSiteNavigation id={id} pages={pages} active={active} />
+          {preview ? (
+            <nav aria-label="Draft preview navigation">
+              {pages.map((p) => (
+                <a key={p.slug} href={`#${p.slug}`} style={{ marginRight: 16 }}>
+                  {p.title}
+                </a>
+              ))}
+              <a href="#contact">Contact</a>
+            </nav>
+          ) : (
+            <PublicSiteNavigation id={id} pages={pages} active={active} />
+          )}
         </div>
       </header>
       {children}

@@ -183,7 +183,16 @@ export function workspaceRouteAccess(
   )
     return false;
   if (path === "" || path === "profile" || path === "card") return true;
-  if (["settings", "audit", "permissions", "team-access"].includes(path))
+  if (
+    [
+      "settings",
+      "audit",
+      "permissions",
+      "team-access",
+      "billing",
+      "onboarding",
+    ].includes(path)
+  )
     return isAdmin(access.role);
   if (path === "members" && access.role === "member") return false;
   if (path === "people")
@@ -194,6 +203,8 @@ export function workspaceRouteAccess(
         canUseModule({ ...access, role: "member" }, "members")) ||
       (isAdmin(access.role) && canUseModule(access, "members"))
     );
+  if (path === "site-builder/preview")
+    return isAdmin(access.role) && canUseModule(access, "website_builder");
   const key = ["scorecard", "golf-index"].includes(path)
     ? "golf"
     : modules.find((m) => m.path === path)?.key;

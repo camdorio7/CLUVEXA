@@ -602,3 +602,12 @@ textarea,.field textarea,.memberJoinForm textarea{min-height:92px}
 
 /* v11 shared content primitives. Portal layout lives in PortalFrame.module.css. */
 .v11State{max-width:800px;margin:10vh auto;padding:24px;line-height:1.6}.v11Grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:20px}.v11Grid>.panel{padding:24px;margin:0}.v11TableWrap{overflow-x:auto;margin:20px 0;background:#fff;border:1px solid #dce3eb;border-radius:10px}.v11Table{border-collapse:collapse;width:100%;color:#172434;font-size:14px}.v11Table th,.v11Table td{padding:14px;text-align:left;border-bottom:1px solid #e5eaf0;vertical-align:top}.v11Table th{font-weight:600}.v11Table small{display:block;color:#596b80;margin-top:5px}.v11Table input[type=checkbox]{width:20px;height:20px}.v11Table button{min-height:40px}.v11Form{display:grid;gap:16px;max-width:760px}.v11Form label{display:grid;gap:6px}.v11Form input,.v11Form select,.v11Form textarea{padding:12px;font:inherit}.v11Notice{padding:16px;border:1px solid #b8c9da;border-radius:10px;background:#f0f6fa;color:#263e54;margin:16px 0}
+
+/* Shared operational controls keep actions readable across portal sizes. */
+.v12Actions{display:flex;align-items:center;flex-wrap:wrap;gap:10px;margin:12px 0}
+.v12Actions button,.v12Actions a{min-height:40px}
+.v11Form summary{font-size:1.1rem;font-weight:650;cursor:pointer;padding:8px 0}
+.v11Form label{min-width:0}
+.v11Form input[type="checkbox"]{width:auto;min-height:auto}
+.panel pre{max-width:100%;font-size:.8rem}
+@media(max-width:700px){.v12Actions{align-items:stretch}.v12Actions .button{flex:1 1 auto}.datarow{overflow-wrap:anywhere}}

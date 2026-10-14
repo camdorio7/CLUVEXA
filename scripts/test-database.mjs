@@ -1,5 +1,6 @@
 import { readFileSync, readdirSync } from "node:fs";
 import { spawnSync } from "node:child_process";
+import { concurrencyTests } from "../tests/database-concurrency.mjs";
 const container = process.env.NADORIO_TEST_CONTAINER || "nadorio-v11-db";
 const database = `nadorio_test_${process.pid}_${Date.now()}`;
 function docker(args, input) {
@@ -28,6 +29,8 @@ try {
     console.log(`Migration PASS ${file}`);
   }
   console.log(sql(readFileSync("tests/database-access.sql", "utf8")));
+  console.log(sql(readFileSync("tests/database-v12.sql", "utf8")));
+  await concurrencyTests(container, database);
 } catch (error) {
   console.error(error.message);
   process.exitCode = 1;

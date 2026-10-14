@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { createClient } from "../../../../lib/supabase/client";
+import { optimizeWebsiteImage } from "../../../../lib/optimize-image";
 type Page = { slug: string; title: string; body: string; published?: boolean };
 type Site = {
   pages: Page[];
@@ -19,6 +20,8 @@ type Site = {
 };
 export default function SiteBuilder() {
   const { id } = useParams<{ id: string }>();
+  const [version, setVersion] = useState(0),
+    [revisions, setRevisions] = useState<any[]>([]);
   const [site, setSite] = useState<Site>({
     pages: [],
     club_id: id,
@@ -36,66 +39,68 @@ export default function SiteBuilder() {
     [saving, setSaving] = useState(false),
     [message, setMessage] = useState(""),
     [authorized, setAuthorized] = useState(false);
-  useEffect(() => {
-    (async () => {
+  async function load() {
+    try {
       const sb = createClient();
-      const {
-        data: { user },
-      } = await sb.auth.getUser();
-      if (!user) {
-        setMessage("Sign in required");
-        setReady(true);
-        return;
-      }
-      const [
-        { data: membership },
-        { data: owner },
-        { data: module },
-        { data: existing },
-      ] = await Promise.all([
-        sb
-          .from("club_users")
-          .select("role,active")
-          .eq("club_id", id)
-          .eq("user_id", user.id)
-          .maybeSingle(),
-        sb.rpc("is_super_admin"),
-        sb
-          .from("club_modules")
-          .select("licensed,club_enabled")
-          .eq("club_id", id)
-          .eq("module_key", "website_builder")
-          .maybeSingle(),
+      const [draft, live, history] = await Promise.all([
+        sb.from("site_drafts").select("*").eq("club_id", id).maybeSingle(),
         sb
           .from("organization_sites")
-          .select("*")
+          .select("published")
           .eq("club_id", id)
           .maybeSingle(),
+        sb
+          .from("site_revisions")
+          .select("id,version,action,created_at,data")
+          .eq("club_id", id)
+          .order("version", { ascending: false })
+          .limit(50),
       ]);
-      if (
-        !(
-          owner === true ||
-          (membership?.active && ["owner", "admin"].includes(membership.role))
-        ) ||
-        !module?.licensed ||
-        !module?.club_enabled
-      ) {
-        setMessage(
-          "Website Builder requires an active license and administrator access.",
-        );
-        setReady(true);
-        return;
-      }
+      if (draft.error || live.error || history.error)
+        throw draft.error || live.error || history.error;
+      setVersion(draft.data?.version || 0);
+      setRevisions(history.data || []);
+      setSite((s) => ({
+        ...s,
+        ...draft.data?.data,
+        published: !!live.data?.published,
+      }));
       setAuthorized(true);
-      if (existing)
-        setSite({
-          ...existing,
-          services: Array.isArray(existing.services) ? existing.services : [],
-          pages: Array.isArray(existing.pages) ? existing.pages : [],
-        });
+    } catch (e: any) {
+      setMessage(e.message);
+    } finally {
       setReady(true);
-    })();
+    }
+  }
+  useEffect(() => {
+    void load();
   }, [id]);
+  async function upload(file: File) {
+    setSaving(true);
+    try {
+      const blob = await optimizeWebsiteImage(file);
+      const sb = createClient(),
+        path = `${id}/website-${crypto.randomUUID()}.webp`;
+      const { error } = await sb.storage
+        .from("club-branding")
+        .upload(path, blob, {
+          contentType: "image/webp",
+          cacheControl: "31536000",
+        });
+      if (error) throw error;
+      change(
+        "hero_image_url",
+        sb.storage.from("club-branding").getPublicUrl(path).data.publicUrl,
+      );
+      setMessage(
+        "Photo optimized and uploaded. Save your draft to keep this change.",
+      );
+    } catch (e: any) {
+      setMessage(e.message);
+    } finally {
+      setSaving(false);
+    }
+  }
   function change<K extends keyof Site>(key: K, value: Site[K]) {
     setSite((s) => ({ ...s, [key]: value }));
   }
@@ -166,22 +171,21 @@ export default function SiteBuilder() {
         );
         return;
       }
-      const { error } = await createClient()
-        .from("organization_sites")
-        .upsert(
-          {
-            ...site,
-            club_id: id,
-            published,
-            updated_at: new Date().toISOString(),
-          },
-          { onConflict: "club_id" },
-        );
+      const { data, error } = await createClient().rpc("v12_save_site", {
+        target_club: id,
+        content: site,
+        expected_version: version,
+        publish_now: published,
+      });
       if (error) throw error;
-      change("published", published);
+      setVersion(data.version);
+      change("published", data.published);
       setMessage(
-        published ? "Website published." : "Draft saved / website unpublished.",
+        published
+          ? "Website published."
+          : "Draft saved. The live website is unchanged.",
       );
+      await load();
     } catch (e) {
       setMessage(e instanceof Error ? e.message : "Could not save website");
     } finally {
@@ -246,6 +250,22 @@ export default function SiteBuilder() {
               page.
             </p>
             <div className="field">
+              <label>
+                Upload a hero photo (JPEG, PNG, WebP; up to 10 MB)
+                <input
+                  type="file"
+                  accept="image/jpeg,image/png,image/webp"
+                  disabled={saving}
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (file) void upload(file);
+                  }}
+                />
+              </label>
+              <p className="muted">
+                Uploads are resized to 1,600 pixels and compressed for faster
+                loading.
+              </p>
               <label>Hero background image (HTTPS URL, optional)</label>
               <input
                 type="url"
@@ -390,8 +410,8 @@ export default function SiteBuilder() {
             <h2>Publishing</h2>
             <p className="muted">
               {site.published ? "Currently published." : "Currently a draft."}{" "}
-              Unpublished websites and unpublished pages are private. Saving a
-              published website applies edits immediately.
+              Draft edits stay private until you select Publish. Saving a draft
+              keeps the live website available.
             </p>
             <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
               <button
@@ -399,16 +419,99 @@ export default function SiteBuilder() {
                 disabled={saving}
                 onClick={() => save(false)}
               >
-                Save draft / Unpublish
+                Save draft
               </button>
               <button
                 className="button gradient"
                 disabled={saving || !site.title.trim()}
                 onClick={() => save(true)}
               >
-                Save & Publish
+                Publish changes
               </button>
+              <Link
+                className="button secondary"
+                href={`/workspace/${id}/site-builder/preview`}
+              >
+                Preview saved draft
+              </Link>
+              {site.published && (
+                <button
+                  className="button secondary"
+                  disabled={saving}
+                  onClick={async () => {
+                    if (
+                      !confirm(
+                        "Take the public website offline? Your draft will be preserved.",
+                      )
+                    )
+                      return;
+                    setSaving(true);
+                    try {
+                      const { error } = await createClient().rpc(
+                        "v12_unpublish_site",
+                        { target_club: id },
+                      );
+                      if (error) throw error;
+                      change("published", false);
+                      setMessage("Website unpublished.");
+                    } catch (e: any) {
+                      setMessage(e.message);
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                >
+                  Unpublish website
+                </button>
+              )}
             </div>
+          </section>
+          <section className="panel v11Form">
+            <h2>Revision history</h2>
+            <p>
+              Last 50 saved versions. Loading a revision changes your editor;
+              save it as a draft before publishing.
+            </p>
+            <button
+              className="button secondary"
+              disabled={saving}
+              onClick={() => {
+                if (
+                  confirm(
+                    "Reload the latest saved draft and discard unsaved edits?",
+                  )
+                )
+                  void load();
+              }}
+            >
+              Reload latest draft
+            </button>
+            {revisions.map((r) => (
+              <div className="v12Actions" key={r.id}>
+                <span>
+                  Version {r.version} · {r.action} ·{" "}
+                  {new Date(r.created_at).toLocaleString()}
+                </span>
+                <button
+                  className="button secondary"
+                  disabled={saving}
+                  onClick={() => {
+                    if (confirm("Replace unsaved edits with this revision?")) {
+                      setSite((s) => ({
+                        ...s,
+                        ...r.data,
+                        published: s.published,
+                      }));
+                      setMessage(
+                        `Version ${r.version} loaded into editor. Save to restore it.`,
+                      );
+                    }
+                  }}
+                >
+                  Load revision
+                </button>
+              </div>
+            ))}
           </section>
         </div>
       )}

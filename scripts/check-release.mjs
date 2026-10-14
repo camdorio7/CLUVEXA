@@ -15,6 +15,9 @@ for (const file of [
   "tests/browser/portals.spec.ts",
   "docs/V11-DEPLOYMENT.md",
   "docs/V11-AUDIT.md",
+  "supabase/migrations/020_nadorio_v12_operations.sql",
+  "tests/database-v12.sql",
+  "docs/V12-DEPLOYMENT.md",
 ])
   check(existsSync(file), file);
 for (const module of modules.filter((m) => m.available))
@@ -24,9 +27,9 @@ for (const module of modules.filter((m) => m.available))
   );
 const source = readFileSync("app/api/email/announcement/route.ts", "utf8");
 check(
-  source.includes("individualEmailMessages") &&
-    source.includes("api.resend.com/emails/batch"),
-  "Announcements use isolated recipient messages",
+  source.includes("v12_publish_announcement") &&
+    /to:\s*\[job.recipient\]/.test(readFileSync("lib/email-worker.ts", "utf8")),
+  "Announcements queue isolated recipient messages",
 );
 const contact = readFileSync("app/api/site/[id]/contact/route.ts", "utf8");
 check(
@@ -59,7 +62,9 @@ for (const dir of readdirSync("app/workspace/[id]", {
   );
 }
 check(
-  !readFileSync("app/(platform)/billing/page.tsx", "utf8").includes("Manage plan <"),
+  !readFileSync("app/(platform)/billing/page.tsx", "utf8").includes(
+    "Manage plan <",
+  ),
   "No inert billing actions",
 );
 console.log(

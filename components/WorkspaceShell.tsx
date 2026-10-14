@@ -133,6 +133,16 @@ export default function WorkspaceShell({
   if (admin)
     items.push(
       {
+        href: base + "/onboarding",
+        label: "Launch checklist",
+        group: "Organization",
+      },
+      {
+        href: base + "/billing",
+        label: "Subscription & billing",
+        group: "Organization",
+      },
+      {
         href: base + "/team-access",
         label: "People & roles",
         group: "People & access",

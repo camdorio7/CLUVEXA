@@ -6,18 +6,34 @@ export default function Billing() {
   const [rows, setRows] = useState<any[]>([]),
     [message, setMessage] = useState(""),
     [busy, setBusy] = useState(""),
-    [loading, setLoading] = useState(true);
+    [loading, setLoading] = useState(true),
+    [page, setPage] = useState(0),
+    [subscriptions, setSubscriptions] = useState<any[]>([]);
   useEffect(() => {
     createClient()
       .from("clubs")
       .select("id,name,plan,subscription_status,billing_email")
       .order("name")
-      .then(({ data, error }) => {
+      .order("id")
+      .range(page * 50, page * 50 + 49)
+      .then(async ({ data, error }) => {
+        let subscriptionError = "";
+        if (data?.length) {
+          const result = await createClient()
+            .from("organization_subscriptions")
+            .select("club_id,status,plan_key,current_period_end")
+            .in(
+              "club_id",
+              data.map((c) => c.id),
+            );
+          if (result.error) subscriptionError = result.error.message;
+          else setSubscriptions(result.data || []);
+        }
         setRows(data || []);
-        setMessage(error?.message || "");
+        setMessage(error?.message || subscriptionError);
         setLoading(false);
       });
-  }, []);
+  }, [page]);
   function edit(id: string, patch: any) {
     setRows((r) => r.map((c) => (c.id === id ? { ...c, ...patch } : c)));
   }
@@ -38,9 +54,9 @@ export default function Billing() {
     <>
       <h1>Plans & billing status</h1>
       <p className="v11Notice">
-        Payment processing is not configured. These are manually maintained
-        commercial records. Saving a plan does not charge a customer, create
-        invoices, or change module licenses.
+        Stripe subscription status appears alongside each organization.
+        Commercial plan records below remain CD7-managed; saving them does not
+        charge the customer or change module licenses.
       </p>
       {message && <p role="status">{message}</p>}
       {loading && <p role="status">Loading organizations…</p>}
@@ -57,8 +73,24 @@ export default function Billing() {
             <h2>
               <Link href={`/clubs/${c.id}`}>{c.name}</Link>
             </h2>
+            <p>
+              Stripe:{" "}
+              <strong>
+                {subscriptions.find((s) => s.club_id === c.id)?.status ||
+                  "Not connected"}
+              </strong>{" "}
+              ·{" "}
+              {subscriptions.find((s) => s.club_id === c.id)?.plan_key ||
+                "No provider plan"}
+            </p>
+            <Link
+              className="button secondary"
+              href={`/workspace/${c.id}/billing`}
+            >
+              Open subscription & invoices
+            </Link>
             <label>
-              Plan
+              Commercial plan
               <select
                 value={c.plan}
                 onChange={(e) => edit(c.id, { plan: e.target.value })}
@@ -71,7 +103,7 @@ export default function Billing() {
               </select>
             </label>
             <label>
-              Recorded billing status
+              Legacy recorded billing status
               <select
                 value={c.subscription_status}
                 onChange={(e) =>
@@ -106,6 +138,21 @@ export default function Billing() {
             </button>
           </form>
         ))}
+      </div>
+      <div className="v12Actions">
+        <button
+          disabled={!page || !!busy}
+          onClick={() => setPage((p) => p - 1)}
+        >
+          Previous
+        </button>
+        <span>Page {page + 1}</span>
+        <button
+          disabled={rows.length < 50 || !!busy}
+          onClick={() => setPage((p) => p + 1)}
+        >
+          Next
+        </button>
       </div>
     </>
   );

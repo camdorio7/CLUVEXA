@@ -1,0 +1,19 @@
+name: Production uptime
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '*/15 * * * *'
+permissions:
+  contents: read
+jobs:
+  health:
+    if: ${{ vars.NADORIO_HEALTHCHECK_URL != '' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: Check configured production health endpoint
+        env:
+          HEALTH_URL: ${{ vars.NADORIO_HEALTHCHECK_URL }}
+        run: |
+          curl --proto '=https' --fail --silent --show-error --max-time 15 --retry 2 "$HEALTH_URL" -o response.json
+          python3 -c 'import json; assert json.load(open("response.json"))["status"] == "ok"'

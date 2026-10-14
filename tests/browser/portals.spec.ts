@@ -41,6 +41,7 @@ async function login(context: BrowserContext, role: string) {
       path: "/",
     },
   ]);
+  return token;
 }
 test("anonymous protected route redirects to login", async ({ page }) => {
   await page.goto("/dashboard");
@@ -164,7 +165,7 @@ test("platform health distinguishes live checks from configuration presence", as
   ).toBeVisible();
   await expect(
     page.getByText(
-      "Billing records are maintained manually; no payment processor is connected.",
+      "Organization subscriptions use Stripe Checkout, signed webhooks, and the customer portal. Confirm a test payment before enabling live billing.",
     ),
   ).toBeVisible();
   await page.screenshot({
@@ -324,4 +325,154 @@ test("mobile navigation closes after choosing a page and restores focus to conte
       () => document.documentElement.scrollWidth <= innerWidth,
     ),
   ).toBe(true);
+});
+
+test("v12 administrator launch checklist and billing use persistent navigation", async ({
+  page,
+  context,
+}) => {
+  await login(context, "admin");
+  await page.goto(`/workspace/${id}/onboarding`);
+  await expect(
+    page.getByRole("heading", { name: "Organization launch checklist" }),
+  ).toBeVisible();
+  await expect(
+    page.getByRole("button", { name: "Record setup complete" }),
+  ).toBeEnabled();
+  await page
+    .getByRole("link", { name: "Subscription & billing", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Subscription & billing", exact: true }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Online billing is awaiting platform configuration."),
+  ).toBeVisible();
+});
+test("v12 CSV validation requires review before importing", async ({
+  page,
+  context,
+}) => {
+  await login(context, "admin");
+  await page.goto(`/workspace/${id}/members`);
+  await page.getByText("Import members from CSV", { exact: true }).click();
+  await page.getByLabel("Member CSV").setInputFiles({
+    name: "members.csv",
+    mimeType: "text/csv",
+    buffer: Buffer.from("full_name,email\nAlex Test,alex@example.test\n"),
+  });
+  await expect(
+    page.getByRole("button", { name: "Import 1 members" }),
+  ).toBeDisabled();
+  await page.getByRole("button", { name: "Validate import" }).click();
+  await expect(
+    page.getByRole("button", { name: "Import 1 members" }),
+  ).toBeEnabled();
+  await page.getByRole("button", { name: "Import 1 members" }).click();
+  await expect(
+    page.getByRole("status").filter({ hasText: "1 members imported." }),
+  ).toBeVisible();
+});
+test("v12 website draft saves preserve live status and preview stays private", async ({
+  page,
+  context,
+}) => {
+  await login(context, "admin");
+  await page.goto(`/workspace/${id}/site-builder`);
+  await expect(
+    page.getByRole("button", { name: "Save draft", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("button", { name: "Save draft", exact: true }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "Draft saved. The live website is unchanged.",
+  );
+  await expect(
+    page.getByRole("button", { name: "Unpublish website", exact: true }),
+  ).toBeVisible();
+  await page.getByRole("link", { name: "Preview saved draft" }).click();
+  await expect(
+    page.getByRole("heading", { name: "Private draft title" }),
+  ).toBeVisible();
+  await expect(
+    page.getByText("Private preview of the saved draft.", { exact: false }),
+  ).toBeVisible();
+});
+test("members cannot navigate to billing or private preview", async ({
+  page,
+  context,
+}) => {
+  await login(context, "member");
+  for (const path of ["billing", "onboarding", "site-builder/preview"]) {
+    expect((await page.goto(`/workspace/${id}/${path}`))?.status()).toBe(403);
+    await expect(
+      page.getByRole("heading", { name: "Access restricted" }),
+    ).toBeVisible();
+  }
+});
+test("public health exposes readiness without operational information", async ({
+  request,
+}) => {
+  const response = await request.get("/api/health");
+  expect(response.status()).toBe(200);
+  expect(await response.json()).toEqual({
+    status: "ok",
+    release: "12.0.0-rc.1",
+  });
+  const internal = await request.get("/api/operations/health");
+  expect([401, 503]).toContain(internal.status());
+  expect(await internal.text()).not.toContain("overdueEmails");
+});
+
+test("full event offers waitlist and downloads a valid calendar", async ({
+  page,
+  context,
+}) => {
+  await login(context, "member");
+  let joined = false;
+  await page.route("**/rest/v1/rpc/v12_register_event", async (route) => {
+    joined = true;
+    await route.fulfill({
+      json: { id: "registration-1", status: "waitlisted" },
+    });
+  });
+  await page.route("**/rest/v1/event_registrations?**", async (route) =>
+    route.fulfill({
+      json: joined
+        ? [
+            {
+              id: "registration-1",
+              event_id: "50000000-0000-0000-0000-000000000001",
+              user_id: "10000000-0000-0000-0000-000000000004",
+              status: "waitlisted",
+            },
+          ]
+        : [],
+    }),
+  );
+  await page.goto(`/workspace/${id}/events`);
+  const downloadPromise = page.waitForEvent("download");
+  await page.getByRole("button", { name: "Add to calendar" }).click();
+  expect((await downloadPromise).suggestedFilename()).toBe("nadorio-event.ics");
+  await page.getByRole("button", { name: "Join waitlist" }).click();
+  await expect(page.getByRole("status")).toContainText(
+    "You joined the waitlist",
+  );
+  await expect(
+    page.getByText("You are on the waitlist", { exact: true }),
+  ).toBeVisible();
+});
+test("billing API rejects missing authentication and member roles", async ({
+  context,
+  request,
+}) => {
+  const missing = await request.post("/api/billing/checkout", {
+    data: { clubId: id, plan: "professional" },
+  });
+  expect(missing.status()).toBe(401);
+  const token = await login(context, "member");
+  const member = await request.post("/api/billing/checkout", {
+    headers: { Authorization: `Bearer ${token}` },
+    data: { clubId: id, plan: "professional" },
+  });
+  expect(member.status()).toBe(403);
 });

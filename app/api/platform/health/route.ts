@@ -30,9 +30,10 @@ export async function GET() {
         { error: "Platform owner access required." },
         { status: 403, headers },
       );
-    const [db, migration] = await Promise.all([
+    const [db, migration, schema] = await Promise.all([
       sb.from("clubs").select("id", { count: "exact", head: true }),
       sb.from("module_catalog").select("module_key,available").limit(1),
+      sb.rpc("v12_health"),
     ]);
     return NextResponse.json(
       {
@@ -56,6 +57,27 @@ export async function GET() {
             detail: migration.error
               ? "Module availability could not be queried. Apply migration 019."
               : "The v11 module catalog is queryable.",
+          },
+          {
+            name: "v12 schema",
+            status:
+              schema.error || schema.data?.schema !== 12
+                ? "Unavailable"
+                : "Operational",
+            detail:
+              schema.error || schema.data?.schema !== 12
+                ? "Apply migration 020 with the v12 application release."
+                : "The v12 operations schema responds.",
+          },
+          {
+            name: "Email scheduler",
+            status:
+              process.env.CRON_SECRET?.length &&
+              process.env.CRON_SECRET.length >= 24
+                ? "Not verified"
+                : "Not configured",
+            detail:
+              "Monitor /api/operations/health with scheduler credentials for heartbeat, overdue queue, and delivery failures.",
           },
           {
             name: "Email provider",
@@ -82,9 +104,12 @@ export async function GET() {
           },
           {
             name: "Payments",
-            status: "Not configured",
+            status:
+              process.env.STRIPE_SECRET_KEY && process.env.STRIPE_WEBHOOK_SECRET
+                ? "Not verified"
+                : "Not configured",
             detail:
-              "Billing records are maintained manually; no payment processor is connected.",
+              "Organization subscriptions use Stripe Checkout, signed webhooks, and the customer portal. Confirm a test payment before enabling live billing.",
           },
         ],
       },

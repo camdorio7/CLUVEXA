@@ -1,6 +1,6 @@
 # NADORIO: path to a production pilot
 
-The recommended first release is the core platform, organization administration, staff/member access, events, announcements, and public websites. Payments, reservations, automation, and a full booking engine are separate product work, not configuration switches. See V11-AUDIT.md for the complete scope.
+The recommended first release is the core platform, organization administration, staff/member access, events, announcements, and public websites. Organization subscriptions are implemented in the v12 release candidate; see [V12-DEPLOYMENT.md](V12-DEPLOYMENT.md) for migration, provider configuration and live validation. Member dues, reservations, automation, and a full booking engine remain separate product work. See V11-AUDIT.md for the complete scope.
 
 ## Changes in this hardening pass
 
@@ -20,7 +20,7 @@ The recommended first release is the core platform, organization administration,
 2. In Supabase Authentication URL Configuration, set Site URL to the same origin. Add the callback URL to Redirect URLs, allowing its query parameters: `https://YOUR-DOMAIN/auth/callback**`. Keep this pattern restricted to your exact production host; add separate controlled staging origins if needed. Keep the previously used join/reset URLs during the transition for already-sent email links.
 3. Confirm that Supabase email templates use `{{ .ConfirmationURL }}` or an equivalent verified flow which preserves the supplied redirect. These PKCE flows must be completed in the browser where signup or recovery started. Configure Supabase's own SMTP/confirmation delivery separately from the app's Resend announcement/invitation API.
 4. Keep the existing Supabase URL/anon key, server-only service role key, Resend key, and verified sender configured. Never use service-role credentials in browser variables.
-5. Migration 019 is still the required schema. The user reported that it has been applied; this environment cannot independently query that deployment. This hardening pass adds no SQL migration.
+5. v12 requires migration 020 after 019 and a coordinated application deployment. The user reported 019 applied; the hosted migration state is not independently verified here.
 6. Confirm the new GitHub Actions run succeeds. Require `validate` for pull requests using branch protection. Vercel's direct main-branch auto-deploy may start before CI completes; adding this workflow alone does not configure deployment gating or branch protection.
 
 ## Launch gate
@@ -42,7 +42,7 @@ Measure before expanding caches: target p75 LCP at or below 2.5 s, INP at or bel
 
 Keep Vercel compute near the Supabase database region. Paginate or virtualize other large organization/member/event lists as representative data exposes bottlenecks. Check database query plans and relevant indexes before adding caches. Never reuse authorization results between users/organizations or make membership revocation depend on a long browser cache.
 
-For large announcement audiences, implement a durable delivery queue with idempotency, provider retries, delivery status, and background jobs before treating bulk email as scalable. Online payments need an actual provider integration, signed/idempotent webhooks, reconciliation, failed-payment handling, and sandbox-to-live acceptance tests. Reservations need inventory, overlap/concurrency controls, cancellation policies, and notifications.
+v12 includes a durable delivery queue, retries, delivery status, and a scheduled worker, plus Stripe organization subscriptions with signed/idempotent webhooks. Configure and test the worker, real delivery, provider reconciliation, failed payments, and sandbox-to-live acceptance before launch. Queue throughput remains bounded and must be sized against your audience. Reservations need inventory, overlap/concurrency controls, cancellation policies, and notifications.
 
 ## Recommended release sequence
 
