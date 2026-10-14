@@ -27,7 +27,7 @@ createServer(async (req, res) => {
     "Access-Control-Allow-Headers",
     "authorization,apikey,content-type,x-client-info,prefer,range,x-supabase-api-version,accept-profile,content-profile,x-retry-count",
   );
-  res.setHeader("Access-Control-Allow-Methods", "GET,POST,HEAD,OPTIONS");
+  res.setHeader("Access-Control-Allow-Methods", "GET,POST,PUT,HEAD,OPTIONS");
   res.setHeader("Access-Control-Expose-Headers", "content-range");
   if (req.method === "OPTIONS") {
     res.writeHead(204);
@@ -44,6 +44,14 @@ createServer(async (req, res) => {
       ).toString(),
     );
   } catch {}
+  let input = {};
+  if (req.method === "POST" || req.method === "PUT") {
+    let raw = "";
+    for await (const chunk of req) raw += chunk;
+    try {
+      input = JSON.parse(raw || "{}");
+    } catch {}
+  }
   const persona = claims.test_role || "visitor";
   const role =
     persona === "super"
@@ -58,6 +66,7 @@ createServer(async (req, res) => {
     role: "authenticated",
     app_metadata: {},
     user_metadata: {},
+    email_confirmed_at: "2026-01-01T00:00:00Z",
     created_at: "2026-01-01T00:00:00Z",
   };
   const club = {
@@ -72,8 +81,84 @@ createServer(async (req, res) => {
     logo_url: null,
   };
   let data = [];
+  if (url.pathname === "/auth/v1/token") {
+    const grant = url.searchParams.get("grant_type");
+    if (
+      (grant === "pkce" &&
+        input.auth_code === "valid-recovery-code" &&
+        input.code_verifier === "fixture-verifier") ||
+      (grant === "password" &&
+        input.email === "member@example.test" &&
+        input.password === "valid-password")
+    ) {
+      const claims = {
+        sub: user.id,
+        role: "authenticated",
+        aud: "authenticated",
+        test_role: "member",
+        exp: Math.floor(Date.now() / 1000) + 3600,
+      };
+      const token =
+        Buffer.from(JSON.stringify({ alg: "HS256", typ: "JWT" })).toString(
+          "base64url",
+        ) +
+        "." +
+        Buffer.from(JSON.stringify(claims)).toString("base64url") +
+        ".testsignature";
+      res.setHeader("Content-Type", "application/json");
+      res.end(
+        JSON.stringify({
+          access_token: token,
+          refresh_token: "fixture-refresh",
+          expires_in: 3600,
+          token_type: "bearer",
+          user: { ...user, email: "member@example.test" },
+        }),
+      );
+      return;
+    }
+    res.writeHead(400, { "Content-Type": "application/json" });
+    res.end(
+      JSON.stringify({
+        error: "invalid_grant",
+        error_description: "Invalid or expired credentials",
+      }),
+    );
+    return;
+  }
+  if (url.pathname === "/auth/v1/signup") {
+    res.setHeader("Content-Type", "application/json");
+    res.end(
+      JSON.stringify({
+        ...user,
+        email: input.email,
+        email_confirmed_at: null,
+        identities: [{ id: user.id }],
+      }),
+    );
+    return;
+  }
+  if (url.pathname === "/auth/v1/recover") {
+    res.setHeader("Content-Type", "application/json");
+    res.end("{}");
+    return;
+  }
+
   if (url.pathname === "/auth/v1/user") {
     data = user;
+  } else if (url.pathname === "/rest/v1/rpc/get_public_club_invitation") {
+    data =
+      input.invite_token === "40000000-0000-0000-0000-000000000001"
+        ? [
+            {
+              email: "member@example.test",
+              full_name: "Alex Morgan",
+              club_name: "Pine Valley Club",
+            },
+          ]
+        : [];
+  } else if (url.pathname === "/rest/v1/rpc/accept_club_invitation") {
+    data = clubId;
   } else if (url.pathname === "/rest/v1/rpc/is_super_admin") {
     data = persona === "super";
   } else if (url.pathname === "/rest/v1/rpc/v11_event_counts") {
@@ -182,6 +267,11 @@ createServer(async (req, res) => {
       },
     ];
   }
+  if (req.headers.prefer?.includes("count=exact"))
+    res.setHeader(
+      "Content-Range",
+      `0-0/${Array.isArray(data) ? data.length : 1}`,
+    );
   if (req.method === "HEAD") {
     res.setHeader(
       "Content-Range",

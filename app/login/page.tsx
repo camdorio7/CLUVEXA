@@ -10,6 +10,7 @@ import {
   UserRound,
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { safeNextPath } from "../../lib/auth-navigation";
 import NadorioLogo from "../../components/NadorioLogo";
 import { createClient } from "../../lib/supabase/client";
 
@@ -24,76 +25,102 @@ function LoginContent() {
 
   useEffect(() => {
     if (params.get("error"))
-      setMsg("This account is not authorized for that area of NADORIO.");
+      setMsg(
+        params.get("error") === "auth_link_expired"
+          ? "This sign-in link has expired or could not be verified. Request a new link, or sign in with your password."
+          : "This account is not authorized for that area of NADORIO.",
+      );
   }, [params]);
 
   async function submit(e: FormEvent) {
     e.preventDefault();
     setBusy(true);
     setMsg("");
-    const sb = createClient();
-    const { data, error } = await sb.auth.signInWithPassword({
-      email: email.trim(),
-      password,
-    });
-    if (error || !data.user) {
-      setMsg(error?.message || "Unable to sign in.");
-      setBusy(false);
-      return;
-    }
+    try {
+      const sb = createClient();
+      const { data, error } = await sb.auth.signInWithPassword({
+        email: email.trim(),
+        password,
+      });
+      if (error || !data.user) {
+        setMsg(error?.message || "Unable to sign in.");
+        setBusy(false);
+        return;
+      }
 
-    const next = params.get("next");
-    if (
-      next &&
-      next.startsWith("/") &&
-      !next.startsWith("//") &&
-      !next.includes("\\")
-    ) {
-      router.replace(next);
-      router.refresh();
-      return;
-    }
-
-    const [{ data: isSuper }, { data: profile }] = await Promise.all([
-      sb.rpc("is_super_admin"),
-      sb
-        .from("profiles")
-        .select("platform_role")
-        .eq("id", data.user.id)
-        .maybeSingle(),
-    ]);
-    if (isSuper === true || profile?.platform_role === "super_admin") {
-      router.replace("/dashboard");
-      router.refresh();
-      return;
-    }
-
-    const { data: memberships } = await sb
-      .from("club_users")
-      .select("club_id, role")
-      .eq("user_id", data.user.id)
-      .eq("active", true)
-      .limit(2);
-    if (!memberships?.length) {
-      const { data: requests } = await sb.rpc("my_club_join_requests");
-      const pending = (requests || []).find((r: any) => r.status === "pending");
-      if (pending) {
-        router.replace("/member/pending");
+      const next = safeNextPath(params.get("next"), "");
+      if (next) {
+        router.replace(next);
         router.refresh();
         return;
       }
-      setMsg(
-        "No active club access was found. If you are joining a club, submit a membership application below.",
+
+      const [
+        { data: isSuper, error: accessError },
+        { data: profile, error: profileError },
+      ] = await Promise.all([
+        sb.rpc("is_super_admin"),
+        sb
+          .from("profiles")
+          .select("platform_role")
+          .eq("id", data.user.id)
+          .maybeSingle(),
+      ]);
+      if (accessError || profileError)
+        throw new Error(
+          "Signed in, but your organization access could not be loaded. Please retry.",
+        );
+      if (isSuper === true || profile?.platform_role === "super_admin") {
+        router.replace("/dashboard");
+        router.refresh();
+        return;
+      }
+
+      const { data: memberships, error: membershipError } = await sb
+        .from("club_users")
+        .select("club_id, role")
+        .eq("user_id", data.user.id)
+        .eq("active", true)
+        .limit(2);
+      if (membershipError)
+        throw new Error("Unable to load your organizations. Please retry.");
+      if (!memberships?.length) {
+        const { data: requests, error: requestError } = await sb.rpc(
+          "my_club_join_requests",
+        );
+        if (requestError)
+          throw new Error(
+            "Unable to check your membership application. Please retry.",
+          );
+        const pending = (requests || []).find(
+          (r: any) => r.status === "pending",
+        );
+        if (pending) {
+          router.replace("/member/pending");
+          router.refresh();
+          return;
+        }
+        setMsg(
+          "No active club access was found. If you are joining a club, submit a membership application below.",
+        );
+        setBusy(false);
+        return;
+      }
+      router.replace(
+        memberships.length > 1
+          ? "/organizations"
+          : "/workspace/" + memberships[0].club_id,
       );
+      router.refresh();
+    } catch (error) {
+      setMsg(
+        error instanceof Error
+          ? error.message
+          : "Unable to sign in. Please check your connection and retry.",
+      );
+    } finally {
       setBusy(false);
-      return;
     }
-    router.replace(
-      memberships.length > 1
-        ? "/organizations"
-        : "/workspace/" + memberships[0].club_id,
-    );
-    router.refresh();
   }
 
   return (
@@ -160,7 +187,11 @@ function LoginContent() {
                 Forgot password?
               </a>
             </div>
-            {msg && <div className="authError">{msg}</div>}
+            {msg && (
+              <div className="authError" role="alert">
+                {msg}
+              </div>
+            )}
             <button className="authPrimary" disabled={busy}>
               <LockKeyhole size={17} />
               {busy ? "Signing in…" : "Sign in"}

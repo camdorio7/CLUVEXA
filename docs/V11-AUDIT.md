@@ -31,7 +31,7 @@ New organization creation is transactional: create identity, recommended license
 - Integration cards store metadata. LINDEX is optional, tenant-bound, and requires its own credentials. External website publishing requires an explicitly configured GitHub connection.
 - Website settings save to the published site's current content. Per-page draft visibility is supported; full site version history, scheduled publication, and staged revisions are not.
 - Database/auth health checks exercise real queries for the current session. Email and external integration credentials are reported as presence-only, not successful delivery/connectivity.
-- Existing signup, invitation, password recovery, and confirmation flows require real Supabase redirect/email configuration and live acceptance testing. Mock browser sessions do not validate Auth-provider email exchanges.
+- Signup, invitation, password recovery, and confirmation flows now share a PKCE callback with automated fixture tests; they require real Supabase redirect/email configuration and live acceptance testing. Fixture-based callback tests do not validate actual Auth-provider email delivery or hosted project configuration.
 
 ## Verification boundaries
 

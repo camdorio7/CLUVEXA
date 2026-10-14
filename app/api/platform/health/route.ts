@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { createServerClient } from "@supabase/ssr";
+import { withRequestTimeout } from "../../../../lib/request-fetch";
 export const dynamic = "force-dynamic";
 export async function GET() {
   const headers = { "Cache-Control": "private, no-store" };
@@ -14,6 +15,7 @@ export async function GET() {
   try {
     const jar = await cookies();
     const sb = createServerClient(url, key, {
+      global: { fetch: withRequestTimeout() },
       cookies: { getAll: () => jar.getAll(), setAll: () => {} },
     });
     const auth = await sb.auth.getUser();

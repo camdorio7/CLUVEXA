@@ -23,6 +23,8 @@ type Club = {
 };
 export default function Dashboard() {
   const [clubs, setClubs] = useState<Club[]>([]);
+  const [organizationCount, setOrganizationCount] = useState(0),
+    [activeCount, setActiveCount] = useState(0);
   const [members, setMembers] = useState(0);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState("");
@@ -31,23 +33,34 @@ export default function Dashboard() {
       const sb = createClient();
       try {
         const [
-          { data: c, error: clubError },
+          { data: c, count: total, error: clubError },
+          { count: active, error: activeError },
           { count: m, error: memberError },
         ] = await Promise.all([
           sb
             .from("clubs")
-            .select("id,name,slug,status,plan,logo_url,club_type")
-            .order("created_at", { ascending: false }),
+            .select("id,name,slug,status,plan,logo_url,club_type", {
+              count: "exact",
+            })
+            .order("created_at", { ascending: false })
+            .limit(12),
+          sb
+            .from("clubs")
+            .select("id", { count: "exact", head: true })
+            .eq("status", "active"),
           sb.from("members").select("*", { count: "exact", head: true }),
         ]);
-        if (clubError || memberError) {
+        if (clubError || memberError || activeError) {
           setLoadError(
             clubError?.message ||
+              activeError?.message ||
               memberError?.message ||
               "Could not load dashboard",
           );
         } else {
           setClubs(c || []);
+          setOrganizationCount(total || 0);
+          setActiveCount(active || 0);
           setMembers(m || 0);
         }
       } catch {
@@ -78,20 +91,16 @@ export default function Dashboard() {
           <Building2 />
           <div>
             <span>Organizations</span>
-            <strong>{loading ? "—" : loadError ? "—" : clubs.length}</strong>
+            <strong>
+              {loading ? "—" : loadError ? "—" : organizationCount}
+            </strong>
           </div>
         </div>
         <div className="statCard">
           <ShieldCheck />
           <div>
             <span>Active Organizations</span>
-            <strong>
-              {loading
-                ? "—"
-                : loadError
-                  ? "—"
-                  : clubs.filter((c) => c.status === "active").length}
-            </strong>
+            <strong>{loading ? "—" : loadError ? "—" : activeCount}</strong>
           </div>
         </div>
         <div className="statCard">
@@ -125,7 +134,7 @@ export default function Dashboard() {
       <div className="sectionHead">
         <div>
           <div className="eyebrow">YOUR NETWORK</div>
-          <h2>Organizations</h2>
+          <h2>Recent organizations</h2>
         </div>
         <Link href="/clubs">Manage all</Link>
       </div>

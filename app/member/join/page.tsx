@@ -1,17 +1,392 @@
-'use client';
-import {FormEvent,useEffect,useMemo,useState} from 'react';
-import {Building2,CheckCircle2,Search,ShieldCheck} from 'lucide-react';
-import NadorioLogo from '../../../components/NadorioLogo';
-import {createClient} from '../../../lib/supabase/client';
+"use client";
+import { authCallbackUrl } from "../../../lib/auth-navigation";
+import { FormEvent, useEffect, useMemo, useState } from "react";
+import { Building2, CheckCircle2, Search, ShieldCheck } from "lucide-react";
+import NadorioLogo from "../../../components/NadorioLogo";
+import { createClient } from "../../../lib/supabase/client";
 
-type Club={id:string;name:string;slug:string;logo_url?:string;primary_color?:string;club_type?:string};
-type Plan={id:string;name:string;description?:string;price:number;billing_period:string;application_note?:string};
-export default function Page(){
- const [clubs,setClubs]=useState<Club[]>([]),[selected,setSelected]=useState<Club|null>(null),[plans,setPlans]=useState<Plan[]>([]),[planId,setPlanId]=useState('');
- const [search,setSearch]=useState(''),[name,setName]=useState(''),[email,setEmail]=useState(''),[password,setPassword]=useState(''),[memberNumber,setMemberNumber]=useState(''),[note,setNote]=useState(''),[busy,setBusy]=useState(false),[msg,setMsg]=useState('');
- useEffect(()=>{createClient().rpc('list_public_nadorio_clubs').then(({data})=>setClubs((data as Club[])||[]))},[]);
- useEffect(()=>{if(!selected){setPlans([]);setPlanId('');return}createClient().rpc('list_public_membership_types',{target_club:selected.id}).then(({data})=>{const p=(data as Plan[])||[];setPlans(p);setPlanId(p.length===1?p[0].id:'')})},[selected]);
- const shown=useMemo(()=>clubs.filter(c=>c.name.toLowerCase().includes(search.toLowerCase())),[clubs,search]);
- async function submit(e:FormEvent){e.preventDefault();if(!selected||!planId)return setMsg('Please select a membership level.');setBusy(true);setMsg('');const sb=createClient();const appUrl=(process.env.NEXT_PUBLIC_APP_URL||'https://app.nadorio.com').replace(/\/$/,'');const next=`${appUrl}/member/complete?club=${selected.id}&plan=${planId}&name=${encodeURIComponent(name)}&number=${encodeURIComponent(memberNumber)}&note=${encodeURIComponent(note)}`;const {data,error}=await sb.auth.signUp({email:email.trim(),password,options:{data:{full_name:name},emailRedirectTo:next}});if(error){setMsg(error.message);setBusy(false);return}if(data.session){const {error:rerr}=await sb.rpc('request_club_membership_v41',{target_club:selected.id,requested_membership_type:planId,requested_name:name,requested_note:note||null,requested_member_number:memberNumber||null});if(rerr){setMsg(rerr.message);setBusy(false);return}location.href='/member/pending';return}setMsg('Check your email to verify your NADORIO account. After verification, your application will be sent to the club for approval.');setBusy(false)}
- return <main className="memberJoinPage"><section className="memberJoinShell"><header className="memberJoinTop"><NadorioLogo/><a href="/login">Already registered? <b>Sign in</b></a></header><div className="memberJoinIntro"><span className="v3pill">MEMBER REGISTRATION</span><h1>Join your club.</h1><p>Choose your organization and membership level. Your club reviews every application before access is activated.</p></div>{!selected?<div className="clubChooser"><div className="chooserHead"><div><h2>Choose your organization</h2><p>Find the club you belong to or are applying to join.</p></div><div className="searchBox"><Search size={18}/><input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search organizations…"/></div></div><div className="clubChoiceGrid">{shown.map(c=><button className="clubChoice" key={c.id} onClick={()=>setSelected(c)}><div className="clubChoiceLogo" style={{borderColor:c.primary_color||'#138cff'}}>{c.logo_url?<img src={c.logo_url} alt=""/>:<Building2/>}</div><div><strong>{c.name}</strong><span>{(c.club_type||'Private club').replaceAll('_',' ')}</span></div><span className="chooseArrow">→</span></button>)}{!shown.length&&<div className="emptyChoice">No organizations match your search.</div>}</div></div>:<div className="joinLayout"><aside className="selectedClub"><button className="backLink" onClick={()=>setSelected(null)}>← Change organization</button><div className="selectedLogo">{selected.logo_url?<img src={selected.logo_url} alt=""/>:<Building2/>}</div><span>APPLYING TO</span><h2>{selected.name}</h2><div className="approvalSteps"><div><CheckCircle2/><p><b>1. Choose membership</b><small>Select a level offered by this club.</small></p></div><div><ShieldCheck/><p><b>2. Club approval</b><small>An administrator verifies your application.</small></p></div><div><Building2/><p><b>3. Member portal</b><small>Future sign-ins automatically open your club.</small></p></div></div></aside><form className="memberJoinForm" onSubmit={submit}><h2>Create your member account</h2><p className="muted">Your application goes directly to {selected.name}.</p><label>Membership level<select value={planId} onChange={e=>setPlanId(e.target.value)} required><option value="">Select a membership level</option>{plans.map(p=><option key={p.id} value={p.id}>{p.name}{Number(p.price)>0?` — $${Number(p.price).toFixed(2)} / ${p.billing_period}`:''}</option>)}</select>{!plans.length&&<small>This club currently has no membership levels open for online application.</small>}</label>{planId&&<div className="selectedPlan">{(()=>{const p=plans.find(x=>x.id===planId);return p?<><b>{p.name}</b><span>{p.description||'Membership application'}</span>{p.application_note&&<small>{p.application_note}</small>}</>:null})()}</div>}<label>Full name<input value={name} onChange={e=>setName(e.target.value)} required autoComplete="name"/></label><label>Email address<input type="email" value={email} onChange={e=>setEmail(e.target.value)} required autoComplete="email"/></label><label>Password<input type="password" minLength={8} value={password} onChange={e=>setPassword(e.target.value)} required autoComplete="new-password"/><small>At least 8 characters</small></label><label>Existing member number <em>optional</em><input value={memberNumber} onChange={e=>setMemberNumber(e.target.value)} placeholder="If your club has already assigned one"/></label><label>Note to the club <em>optional</em><textarea value={note} onChange={e=>setNote(e.target.value)} placeholder="Anything the club should know when reviewing your application"/></label>{msg&&<div className={msg.startsWith('Check')?'joinSuccess':'joinError'}>{msg}</div>}<button className="joinButton" disabled={busy||!plans.length}>{busy?'Submitting application…':'Submit Membership Application'}</button></form></div>}<footer className="memberJoinFooter">Secure club access · NADORIO by CD7 Technologies</footer></section></main>
+type Club = {
+  id: string;
+  name: string;
+  slug: string;
+  logo_url?: string;
+  primary_color?: string;
+  club_type?: string;
+};
+type Plan = {
+  id: string;
+  name: string;
+  description?: string;
+  price: number;
+  billing_period: string;
+  application_note?: string;
+};
+export default function Page() {
+  const [clubs, setClubs] = useState<Club[]>([]),
+    [selected, setSelected] = useState<Club | null>(null),
+    [plans, setPlans] = useState<Plan[]>([]),
+    [planId, setPlanId] = useState("");
+  const [search, setSearch] = useState(""),
+    [name, setName] = useState(""),
+    [email, setEmail] = useState(""),
+    [password, setPassword] = useState(""),
+    [memberNumber, setMemberNumber] = useState(""),
+    [note, setNote] = useState(""),
+    [busy, setBusy] = useState(false),
+    [msg, setMsg] = useState("");
+  const [loadError, setLoadError] = useState(""),
+    [clubsLoading, setClubsLoading] = useState(true),
+    [plansLoading, setPlansLoading] = useState(false);
+  useEffect(() => {
+    let live = true;
+    (async () => {
+      try {
+        const { data, error } = await createClient().rpc(
+          "list_public_nadorio_clubs",
+        );
+        if (error) throw error;
+        if (live) setClubs((data as Club[]) || []);
+      } catch {
+        if (live)
+          setLoadError(
+            "Organizations could not be loaded. Please reload and try again.",
+          );
+      } finally {
+        if (live) setClubsLoading(false);
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, []);
+  useEffect(() => {
+    let live = true;
+    setPlans([]);
+    setPlanId("");
+    if (!selected) {
+      setPlansLoading(false);
+      return;
+    }
+    setPlansLoading(true);
+    setLoadError("");
+    (async () => {
+      try {
+        const { data, error } = await createClient().rpc(
+          "list_public_membership_types",
+          { target_club: selected.id },
+        );
+        if (error) throw error;
+        if (!live) return;
+        const plans = (data as Plan[]) || [];
+        setPlans(plans);
+        setPlanId(plans.length === 1 ? plans[0].id : "");
+      } catch {
+        if (live)
+          setLoadError(
+            "Membership levels could not be loaded. Please choose the organization again.",
+          );
+      } finally {
+        if (live) setPlansLoading(false);
+      }
+    })();
+    return () => {
+      live = false;
+    };
+  }, [selected]);
+  const shown = useMemo(
+    () =>
+      clubs.filter((c) => c.name.toLowerCase().includes(search.toLowerCase())),
+    [clubs, search],
+  );
+  async function submit(e: FormEvent) {
+    e.preventDefault();
+    if (!selected || !planId)
+      return setMsg("Please select a membership level.");
+    setBusy(true);
+    setMsg("");
+    try {
+      const sb = createClient();
+      const appUrl = (
+        process.env.NEXT_PUBLIC_APP_URL || window.location.origin
+      ).replace(/\/$/, "");
+      const next = `${appUrl}/member/complete?club=${selected.id}&plan=${planId}&name=${encodeURIComponent(name)}&number=${encodeURIComponent(memberNumber)}&note=${encodeURIComponent(note)}`;
+      const { data, error } = await sb.auth.signUp({
+        email: email.trim(),
+        password,
+        options: {
+          data: { full_name: name },
+          emailRedirectTo: authCallbackUrl(appUrl, next.slice(appUrl.length)),
+        },
+      });
+      if (error) {
+        setMsg(error.message);
+        setBusy(false);
+        return;
+      }
+      if (data.session) {
+        const { error: rerr } = await sb.rpc("request_club_membership_v41", {
+          target_club: selected.id,
+          requested_membership_type: planId,
+          requested_name: name,
+          requested_note: note || null,
+          requested_member_number: memberNumber || null,
+        });
+        if (rerr) {
+          setMsg(rerr.message);
+          setBusy(false);
+          return;
+        }
+        location.href = "/member/pending";
+        return;
+      }
+      setMsg(
+        "Check your email to verify your NADORIO account. After verification, your application will be sent to the club for approval.",
+      );
+      setBusy(false);
+    } catch (error) {
+      setMsg(
+        error instanceof Error
+          ? error.message
+          : "Unable to submit your application. Please retry.",
+      );
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <main className="memberJoinPage">
+      <section className="memberJoinShell">
+        <header className="memberJoinTop">
+          <NadorioLogo />
+          <a href="/login">
+            Already registered? <b>Sign in</b>
+          </a>
+        </header>
+        <div className="memberJoinIntro">
+          <span className="v3pill">MEMBER REGISTRATION</span>
+          <h1>Join your club.</h1>
+          <p>
+            Choose your organization and membership level. Your club reviews
+            every application before access is activated.
+          </p>
+        </div>
+        {loadError && (
+          <div className="joinError" role="alert">
+            {loadError}
+          </div>
+        )}
+        {!selected ? (
+          <div className="clubChooser">
+            <div className="chooserHead">
+              <div>
+                <h2>Choose your organization</h2>
+                <p>Find the club you belong to or are applying to join.</p>
+              </div>
+              <div className="searchBox">
+                <Search size={18} />
+                <input
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search organizations…"
+                />
+              </div>
+            </div>
+            <div className="clubChoiceGrid">
+              {shown.map((c) => (
+                <button
+                  className="clubChoice"
+                  key={c.id}
+                  onClick={() => setSelected(c)}
+                >
+                  <div
+                    className="clubChoiceLogo"
+                    style={{ borderColor: c.primary_color || "#138cff" }}
+                  >
+                    {c.logo_url ? (
+                      <img src={c.logo_url} alt="" />
+                    ) : (
+                      <Building2 />
+                    )}
+                  </div>
+                  <div>
+                    <strong>{c.name}</strong>
+                    <span>
+                      {(c.club_type || "Private club").replaceAll("_", " ")}
+                    </span>
+                  </div>
+                  <span className="chooseArrow">→</span>
+                </button>
+              ))}
+              {clubsLoading && (
+                <div className="emptyChoice" role="status">
+                  Loading organizations…
+                </div>
+              )}
+              {!clubsLoading && !loadError && !shown.length && (
+                <div className="emptyChoice">
+                  No organizations match your search.
+                </div>
+              )}
+            </div>
+          </div>
+        ) : (
+          <div className="joinLayout">
+            <aside className="selectedClub">
+              <button className="backLink" onClick={() => setSelected(null)}>
+                ← Change organization
+              </button>
+              <div className="selectedLogo">
+                {selected.logo_url ? (
+                  <img src={selected.logo_url} alt="" />
+                ) : (
+                  <Building2 />
+                )}
+              </div>
+              <span>APPLYING TO</span>
+              <h2>{selected.name}</h2>
+              <div className="approvalSteps">
+                <div>
+                  <CheckCircle2 />
+                  <p>
+                    <b>1. Choose membership</b>
+                    <small>Select a level offered by this club.</small>
+                  </p>
+                </div>
+                <div>
+                  <ShieldCheck />
+                  <p>
+                    <b>2. Club approval</b>
+                    <small>An administrator verifies your application.</small>
+                  </p>
+                </div>
+                <div>
+                  <Building2 />
+                  <p>
+                    <b>3. Member portal</b>
+                    <small>Future sign-ins automatically open your club.</small>
+                  </p>
+                </div>
+              </div>
+            </aside>
+            <form className="memberJoinForm" onSubmit={submit}>
+              <h2>Create your member account</h2>
+              <p className="muted">
+                Your application goes directly to {selected.name}.
+              </p>
+              <label>
+                Membership level
+                <select
+                  value={planId}
+                  onChange={(e) => setPlanId(e.target.value)}
+                  required
+                >
+                  <option value="">Select a membership level</option>
+                  {plans.map((p) => (
+                    <option key={p.id} value={p.id}>
+                      {p.name}
+                      {Number(p.price) > 0
+                        ? ` — $${Number(p.price).toFixed(2)} / ${p.billing_period}`
+                        : ""}
+                    </option>
+                  ))}
+                </select>
+                {plansLoading && (
+                  <small role="status">Loading membership levels…</small>
+                )}
+                {!plansLoading && !loadError && !plans.length && (
+                  <small>
+                    This club currently has no membership levels open for online
+                    application.
+                  </small>
+                )}
+              </label>
+              {planId && (
+                <div className="selectedPlan">
+                  {(() => {
+                    const p = plans.find((x) => x.id === planId);
+                    return p ? (
+                      <>
+                        <b>{p.name}</b>
+                        <span>{p.description || "Membership application"}</span>
+                        {p.application_note && (
+                          <small>{p.application_note}</small>
+                        )}
+                      </>
+                    ) : null;
+                  })()}
+                </div>
+              )}
+              <label>
+                Full name
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  required
+                  autoComplete="name"
+                />
+              </label>
+              <label>
+                Email address
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  autoComplete="email"
+                />
+              </label>
+              <label>
+                Password
+                <input
+                  type="password"
+                  minLength={8}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  autoComplete="new-password"
+                />
+                <small>At least 8 characters</small>
+              </label>
+              <label>
+                Existing member number <em>optional</em>
+                <input
+                  value={memberNumber}
+                  onChange={(e) => setMemberNumber(e.target.value)}
+                  placeholder="If your club has already assigned one"
+                />
+              </label>
+              <label>
+                Note to the club <em>optional</em>
+                <textarea
+                  value={note}
+                  onChange={(e) => setNote(e.target.value)}
+                  placeholder="Anything the club should know when reviewing your application"
+                />
+              </label>
+              {msg && (
+                <div
+                  className={
+                    msg.startsWith("Check") ? "joinSuccess" : "joinError"
+                  }
+                >
+                  {msg}
+                </div>
+              )}
+              <button
+                className="joinButton"
+                disabled={busy || plansLoading || !plans.length}
+              >
+                {busy
+                  ? "Submitting application…"
+                  : "Submit Membership Application"}
+              </button>
+            </form>
+          </div>
+        )}
+        <footer className="memberJoinFooter">
+          Secure club access · NADORIO by CD7 Technologies
+        </footer>
+      </section>
+    </main>
+  );
 }

@@ -1,3 +1,4 @@
+import { existsSync } from "node:fs";
 import { defineConfig } from "@playwright/test";
 export default defineConfig({
   testDir: "tests/browser",
@@ -9,7 +10,8 @@ export default defineConfig({
     browserName: "chromium",
     launchOptions: {
       executablePath:
-        process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE || "/usr/bin/chromium",
+        process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE ||
+        (existsSync("/usr/bin/chromium") ? "/usr/bin/chromium" : undefined),
     },
     trace: "retain-on-failure",
   },

@@ -21,3 +21,9 @@ Platform pages now share a persistent `(platform)` route-group layout; public UR
 All portal sidebars use visible groups, icons, descriptive links, a subtle current-page highlight, and intent-based prefetching. The brand and account controls stay fixed while long navigation lists scroll. Pending navigation is shown beside the selected link, with page-only loading placeholders for slower routes. Mobile navigation supports Escape, closes after routing, and moves keyboard focus to the content.
 
 Validation: 18 browser checks, including persistent navigation for platform/admin/staff/member, browser back, direct access denial, and mobile focus; TypeScript and production build. No database migration is required for this update.
+
+## Production hardening update
+
+Account signup, invitations and password recovery now use a dedicated PKCE callback. Existing invitees can sign in explicitly; new invitees see the real confirmation state. Login and recovery expose retryable errors. Portal error boundaries recover failed page renders, selected upstream requests have timeouts, and dashboard organization data is bounded to 12 recent records with independent totals.
+
+Dependencies now use the verified exact versions, and a GitHub Actions workflow validates future changes. Add the production callback redirect to Supabase before relying on the new email flows. See PRODUCTION-READINESS.md for the exact configuration, live acceptance gates, performance targets, and remaining product work. No additional SQL migration is needed.

@@ -1,15 +1,21 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextRequest, NextResponse } from "next/server";
 import { AccessError, loadWorkspaceAccess } from "./lib/access-context";
+import { withRequestTimeout } from "./lib/request-fetch";
 import { workspaceRouteAccess } from "./lib/modules";
 
 export async function proxy(request: NextRequest) {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL,
     key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const started = performance.now();
   let response = NextResponse.next({ request });
   const finish = (res: NextResponse) => {
     for (const cookie of response.cookies.getAll()) res.cookies.set(cookie);
     res.headers.set("Cache-Control", "private, no-store");
+    res.headers.set(
+      "Server-Timing",
+      `authorization;dur=${(performance.now() - started).toFixed(1)}`,
+    );
     return res;
   };
   const denied = (status: number, message: string) =>
@@ -25,6 +31,7 @@ export async function proxy(request: NextRequest) {
       "Authentication is not configured. Add the Supabase environment variables to start this workspace.",
     );
   const sb = createServerClient(url, key, {
+    global: { fetch: withRequestTimeout() },
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll: (values) => {
