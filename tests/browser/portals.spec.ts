@@ -61,10 +61,6 @@ test("member dashboard and organization navigation render without a button grid"
   await expect(
     page.getByRole("heading", { name: "Alex Morgan" }),
   ).toBeVisible();
-  await page
-    .locator("summary")
-    .filter({ hasText: "Golf & club services" })
-    .click();
   await expect(
     page.getByRole("link", { name: "My scorecard", exact: true }),
   ).toBeVisible();
@@ -229,4 +225,103 @@ test("public contact validation and missing configuration are explicit", async (
       })
     ).status(),
   ).toBe(503);
+});
+
+test("platform sidebar persists through navigation and browser back without a verification screen", async ({
+  page,
+  context,
+}) => {
+  await login(context, "super");
+  await page.goto("/dashboard");
+  const sidebar = page.locator("#portal-navigation");
+  await expect(
+    sidebar.getByRole("link", { name: "Platform health", exact: true }),
+  ).toBeVisible();
+  await sidebar.evaluate((el) =>
+    el.setAttribute("data-persistence-check", "original"),
+  );
+  let browserAuthChecks = 0;
+  page.on("request", (req) => {
+    if (req.url().includes("/auth/v1/user")) browserAuthChecks++;
+  });
+  await sidebar
+    .getByRole("link", { name: "Platform health", exact: true })
+    .click();
+  await expect(
+    page.getByRole("heading", { name: "Platform health", exact: true }),
+  ).toBeVisible();
+  await expect(sidebar).toHaveAttribute("data-persistence-check", "original");
+  await expect(
+    sidebar.getByRole("link", { name: "Platform health", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(page.getByText("Verifying platform access…")).toHaveCount(0);
+  expect(browserAuthChecks).toBe(0);
+  await page.goBack();
+  await expect(
+    sidebar.getByRole("link", { name: "Overview", exact: true }),
+  ).toHaveAttribute("aria-current", "page");
+  await expect(sidebar).toHaveAttribute("data-persistence-check", "original");
+  await page.screenshot({
+    path: "artifacts/platform-navigation.png",
+    fullPage: true,
+  });
+});
+
+for (const role of ["admin", "staff", "member"]) {
+  test(`${role} navigation keeps the organization shell and exposes links directly`, async ({
+    page,
+    context,
+  }) => {
+    await login(context, role);
+    await page.goto(`/workspace/${id}`);
+    const sidebar = page.locator("#portal-navigation");
+    await expect(
+      sidebar.getByRole("link", { name: "My profile", exact: true }),
+    ).toBeVisible();
+    await expect(sidebar.locator("details")).toHaveCount(0);
+    await sidebar.evaluate((el) =>
+      el.setAttribute("data-persistence-check", "original"),
+    );
+    let moduleReloads = 0;
+    page.on("request", (req) => {
+      if (req.url().includes("/rest/v1/club_modules")) moduleReloads++;
+    });
+    await sidebar
+      .getByRole("link", { name: "My profile", exact: true })
+      .click();
+    await expect(page).toHaveURL(new RegExp(`/workspace/${id}/profile$`));
+    await expect(sidebar).toHaveAttribute("data-persistence-check", "original");
+    await expect(
+      sidebar.getByRole("link", { name: "My profile", exact: true }),
+    ).toHaveAttribute("aria-current", "page");
+    expect(moduleReloads).toBe(0);
+    await sidebar.getByRole("link", { name: "Dashboard", exact: true }).click();
+    await expect(
+      page.getByRole("heading", { name: "Welcome, Alex." }),
+    ).toBeVisible();
+    await expect(sidebar).toHaveAttribute("data-persistence-check", "original");
+  });
+}
+
+test("mobile navigation closes after choosing a page and restores focus to content", async ({
+  page,
+  context,
+}) => {
+  await login(context, "member");
+  await page.setViewportSize({ width: 390, height: 844 });
+  await page.goto(`/workspace/${id}`);
+  await page.getByRole("button", { name: "Open navigation" }).click();
+  await page
+    .locator("#portal-navigation")
+    .getByRole("link", { name: "My profile", exact: true })
+    .click();
+  await expect(
+    page.getByRole("button", { name: "Open navigation" }),
+  ).toHaveAttribute("aria-expanded", "false");
+  await expect(page.locator("#portal-content")).toBeFocused();
+  expect(
+    await page.evaluate(
+      () => document.documentElement.scrollWidth <= innerWidth,
+    ),
+  ).toBe(true);
 });

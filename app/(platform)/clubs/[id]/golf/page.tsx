@@ -1,0 +1,2 @@
+'use client';import {useParams} from 'next/navigation';import ClubHeader from '../../../../../components/ClubHeader';
+export default function Page(){const {id}=useParams<{id:string}>();return <><ClubHeader id={id} title="Golf" subtitle="NADORIO operating module"/><div className="panel"><div className="panelhead">Golf</div><div className="empty moduleempty"><b>Module foundation ready.</b><br/>This area is now part of the club operating console and will use the same tenant-isolated NADORIO data model.</div></div></>}

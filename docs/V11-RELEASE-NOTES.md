@@ -13,3 +13,11 @@ This release consolidates the existing NADORIO application into a shared organiz
 Migration 019 and coordinated app deployment are required. The package is a changed-files overlay on the source repository, not a standalone source distribution. Keep existing unchanged files, install from the included lockfile, and read V11-DEPLOYMENT.md before applying it.
 
 Unsupported modules and external-service limitations are explicit in V11-AUDIT.md. Payment processing, a booking engine, full document/reservation systems, automated workflows, and live-service certification are outside this release candidate.
+
+## Navigation update
+
+Platform pages now share a persistent `(platform)` route-group layout; public URLs are unchanged. The per-page browser authorization splash has been removed while the server proxy and database policies continue to authorize requests. Organization shell data stays available during explicit refreshes.
+
+All portal sidebars use visible groups, icons, descriptive links, a subtle current-page highlight, and intent-based prefetching. The brand and account controls stay fixed while long navigation lists scroll. Pending navigation is shown beside the selected link, with page-only loading placeholders for slower routes. Mobile navigation supports Escape, closes after routing, and moves keyboard focus to the content.
+
+Validation: 18 browser checks, including persistent navigation for platform/admin/staff/member, browser back, direct access denial, and mobile focus; TypeScript and production build. No database migration is required for this update.

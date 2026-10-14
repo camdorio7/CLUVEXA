@@ -19,6 +19,7 @@ import {
 } from "../lib/modules";
 import { getOrganizationType } from "../lib/organization-types";
 import { organizationTheme } from "../lib/organization-theme";
+import PortalLoading from "./PortalLoading";
 import PortalFrame, { type NavItem } from "./PortalFrame";
 export type WorkspaceContext = {
   club: any;
@@ -47,7 +48,7 @@ export default function WorkspaceShell({
   const [revision, setRevision] = useState(0);
   useEffect(() => {
     let live = true;
-    setData(null);
+
     setError("");
     (async () => {
       try {
@@ -82,12 +83,7 @@ export default function WorkspaceShell({
         <Link href="/organizations">Your organizations</Link>
       </main>
     );
-  if (!data)
-    return (
-      <main className="v11State" role="status">
-        Verifying organization access…
-      </main>
-    );
+  if (!data || data.club.id !== id) return <PortalLoading />;
   const { club, access } = data;
   const base = `/workspace/${id}`;
   const member = access.role === "member";

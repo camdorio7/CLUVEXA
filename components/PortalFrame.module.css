@@ -2,7 +2,7 @@
   --portal-bg: #f5f7fa;
   --portal-text: #172434;
   display: grid;
-  grid-template-columns: 252px minmax(0, 1fr);
+  grid-template-columns: 264px minmax(0, 1fr);
   min-height: 100dvh;
   background: var(--portal-bg);
   color: var(--portal-text);
@@ -18,7 +18,7 @@
   border-right: 1px solid #dce3eb;
   padding: 26px 18px;
   z-index: 40;
-  overflow-y: auto;
+  overflow: hidden;
 }
 .brand {
   display: flex;
@@ -27,6 +27,7 @@
   text-decoration: none;
   color: #172434;
   margin-bottom: 26px;
+  flex-shrink: 0;
   min-width: 0;
 }
 .brand img {
@@ -57,6 +58,11 @@
   font-weight: 700;
 }
 .nav {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: #65748a transparent;
   display: flex;
   flex-direction: column;
   gap: 4px;
@@ -65,13 +71,17 @@
 .footer a {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 12px;
   text-decoration: none;
   color: #435369;
   font-size: 14px;
   padding: 11px 12px;
-  border-radius: 8px;
+  border-radius: 6px;
   min-height: 44px;
+  border-left: 3px solid transparent;
+  transition:
+    background-color 0.12s ease,
+    color 0.12s ease;
 }
 .nav a:hover,
 .nav a[aria-current="page"] {
@@ -82,22 +92,31 @@
   font-weight: 700;
   border-left: 3px solid var(--club-primary, #155e75);
 }
-.nav details {
-  margin-top: 14px;
+.navGroup {
+  flex-shrink: 0;
 }
-.nav summary {
-  cursor: pointer;
-  color: #58687b;
-  font-size: 11px;
+.navGroup + .navGroup {
+  margin-top: 16px;
+}
+.groupLabel {
+  margin: 0 0 5px;
+  padding: 8px 15px 4px;
+  color: #65748a;
+  font-size: 10px;
   font-weight: 700;
   text-transform: uppercase;
-  letter-spacing: 0.07em;
-  padding: 10px 8px;
-  min-height: 40px;
+  letter-spacing: 0.1em;
+}
+.nav a > svg {
+  flex-shrink: 0;
+}
+.nav a > span {
+  flex: 1;
 }
 .footer {
   margin-top: auto;
-  padding-top: 28px;
+  padding-top: 16px;
+  flex-shrink: 0;
 }
 .footer small {
   display: block;
@@ -249,7 +268,7 @@
   color: #f1f6ff;
 }
 .platform .brand small,
-.platform .nav summary,
+.platform .groupLabel,
 .platform .footer small {
   color: #91a7c0;
 }
@@ -268,10 +287,13 @@
   color: #fff;
 }
 .platform .nav a[aria-current="page"] {
-  background: linear-gradient(100deg, #126cf2, #0e9eff);
-  border-left-color: #45c8ff;
-  color: #fff;
-  box-shadow: 0 6px 22px #126cf224;
+  background: #102b44;
+  border-left-color: #27b8ff;
+  color: #edf7ff;
+  box-shadow: none;
+}
+.platform .nav a[aria-current="page"] > svg {
+  color: #36c6ff;
 }
 .platform .footer button {
   border-color: #29445f;
@@ -374,4 +396,124 @@
 .platform :is(a, button, input, select, textarea, summary):focus-visible {
   outline: 2px solid #52d6ff;
   outline-offset: 3px;
+}
+
+.footer button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  min-height: 44px;
+}
+.mobile small {
+  display: block;
+  margin-top: 4px;
+  color: #65748a;
+  font-size: 12px;
+}
+.platform .mobile small {
+  color: #a0b3cb;
+}
+.main:focus {
+  outline: none;
+}
+.skipLink {
+  position: fixed;
+  top: 8px;
+  left: 12px;
+  z-index: 60;
+  transform: translateY(-180%);
+  background: #fff;
+  color: #172434;
+  padding: 12px 18px;
+  border-radius: 6px;
+}
+.skipLink:focus {
+  transform: translateY(0);
+}
+.shell :is(a, button, input, select, textarea):focus-visible {
+  outline: 2px solid #1686c0;
+  outline-offset: 2px;
+}
+.platform :is(a, button, input, select, textarea):focus-visible {
+  outline-color: #52d6ff;
+}
+.pending {
+  animation: portalSpin 0.8s linear infinite;
+}
+.loading {
+  padding: 24px;
+  color: inherit;
+}
+.skeletonTitle,
+.skeletonLine,
+.skeletonCards > div {
+  background: currentColor;
+  opacity: 0.08;
+  border-radius: 10px;
+}
+.skeletonTitle {
+  width: 42%;
+  height: 32px;
+}
+.skeletonLine {
+  margin-top: 18px;
+  width: 65%;
+  height: 14px;
+}
+.skeletonCards {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 20px;
+  margin-top: 32px;
+}
+.skeletonCards > div {
+  min-height: 160px;
+}
+@keyframes portalSpin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pending {
+    animation: none;
+  }
+  .nav a,
+  .sidebar {
+    transition: none;
+  }
+}
+@media (max-width: 600px) {
+  .skeletonCards {
+    grid-template-columns: 1fr;
+  }
+}
+
+.secondaryNav {
+  display: flex;
+  gap: 24px;
+  max-width: 100%;
+  overflow-x: auto;
+  border-bottom: 1px solid #29445f;
+  margin: 24px 0;
+}
+.secondaryNav a {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  min-height: 46px;
+  padding: 10px 2px;
+  border-bottom: 2px solid transparent;
+  color: #a0b3cb;
+  font-size: 14px;
+  text-decoration: none;
+}
+.secondaryNav a:hover {
+  color: #fff;
+}
+.secondaryNav a[aria-current="page"] {
+  color: #48caff;
+  border-bottom-color: #27b8ff;
+  font-weight: 700;
 }

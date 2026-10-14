@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { Building2, ExternalLink } from "lucide-react";
 import { usePathname } from "next/navigation";
+import styles from "./PortalFrame.module.css";
 import { createClient } from "../lib/supabase/client";
 
 export default function ClubHeader({
@@ -26,10 +27,10 @@ export default function ClubHeader({
   }, [id]);
   const links = [
     ["", "Overview"],
-    ["/people", "People & Access"],
-    ["/modules", "Modules & Licensing"],
-    ["/platforms", "Connected Platforms"],
-    ["/settings", "Branding & Settings"],
+    ["/people", "People & access"],
+    ["/modules", "Modules"],
+    ["/platforms", "Integrations"],
+    ["/settings", "Settings"],
   ];
   return (
     <>
@@ -58,18 +59,18 @@ export default function ClubHeader({
           </Link>
         </div>
       </div>
-      <div className="clubnav ownernav">
+      <nav className={styles.secondaryNav} aria-label="Organization management">
         {links.map(([s, l]) => (
           <Link
             prefetch
             key={s}
-            className={path === `/clubs/${id}${s}` ? "active" : ""}
+            aria-current={path === `/clubs/${id}${s}` ? "page" : undefined}
             href={`/clubs/${id}${s}`}
           >
             {l}
           </Link>
         ))}
-      </div>
+      </nav>
     </>
   );
 }

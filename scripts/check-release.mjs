@@ -59,7 +59,7 @@ for (const dir of readdirSync("app/workspace/[id]", {
   );
 }
 check(
-  !readFileSync("app/billing/page.tsx", "utf8").includes("Manage plan <"),
+  !readFileSync("app/(platform)/billing/page.tsx", "utf8").includes("Manage plan <"),
   "No inert billing actions",
 );
 console.log(
