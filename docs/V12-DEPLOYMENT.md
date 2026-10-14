@@ -94,3 +94,7 @@ Event registration, waitlist promotion, cancellation, schedule/location changes 
 For an application failure after migration, prefer a tested forward fix. Do not roll back to the old site builder while 020's RPC-only publishing policies are active. Restore the pre-release database and matching application together only under a planned recovery procedure; doing so can lose writes since the backup. Pause the email scheduler and checkout during recovery, then reconcile provider events before resuming. Keep the old Vercel deployment available until live smoke checks pass.
 
 Deferred live work: actual provider credentials/configuration, payment and delivery verification, staging promotion, backup restoration, alert destinations, and production load measurement. Repository changes do not complete these external steps.
+
+## Existing-table conflict during migration
+
+If migration 020 reports `42P07: relation "organization_subscriptions" already exists`, stop and run the read-only [schema diagnostic](../supabase/diagnostics/v12-existing-schema.sql). Return the `v12_schema_diagnostic` result for compatibility review. It contains table definitions, constraints, policies, indexes and triggers, not business records or credentials. The checked-in migrations before 020 do not define this table, so the hosted definition must be inspected before adapting it. Do not drop the table, skip it with `IF NOT EXISTS`, or rerun fragments of 020. Keep the application on its existing production version until the compatible migration succeeds.
