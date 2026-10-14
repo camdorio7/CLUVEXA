@@ -25,7 +25,21 @@ try {
   for (const file of readdirSync("supabase/migrations")
     .filter((f) => f.endsWith(".sql"))
     .sort()) {
+    if (
+      file.startsWith("020_") &&
+      process.env.NADORIO_TEST_LEGACY_BILLING === "1"
+    )
+      sql(readFileSync("tests/database-legacy-billing.sql", "utf8"));
     sql(readFileSync(`supabase/migrations/${file}`, "utf8"));
+    if (
+      file.startsWith("020_") &&
+      process.env.NADORIO_TEST_LEGACY_BILLING === "1"
+    ) {
+      sql(readFileSync("tests/database-legacy-upgrade.sql", "utf8"));
+      console.log(
+        "Legacy billing PASS preserved data, permissions and provider reconciliation",
+      );
+    }
     console.log(`Migration PASS ${file}`);
   }
   console.log(sql(readFileSync("tests/database-access.sql", "utf8")));

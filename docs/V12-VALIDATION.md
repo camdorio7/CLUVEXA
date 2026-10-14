@@ -31,3 +31,7 @@ Reviewed mobile portal screenshot: navigation remains usable without horizontal 
 - Backup restore rehearsal, alert routing, production measurements, and GitHub/Vercel deployment gate settings.
 
 See [V12-DEPLOYMENT.md](V12-DEPLOYMENT.md) for exact configuration and rollout order. Passing local tests does not establish that these external services are configured.
+
+## Hosted legacy billing upgrade regression
+
+The schema supplied in the production diagnostic is reproduced in `tests/database-legacy-billing.sql`. Run `NADORIO_TEST_LEGACY_BILLING=1 npm run test:database` to apply 020 to that definition, verify existing IDs, amounts, billing intervals and dates survive, verify Stripe identifiers are carried forward and tenant write access is removed, then run the same 122 database assertions and five concurrency scenarios. Both fresh-schema and legacy-schema runs passed locally. No hosted customer records were copied into the fixtures.

@@ -37,6 +37,11 @@ jobs:
         run: npm run test:database
         env:
           NADORIO_TEST_CONTAINER: ${{ job.services.postgres.id }}
+      - name: Upgrade existing hosted billing schema
+        run: npm run test:database
+        env:
+          NADORIO_TEST_CONTAINER: ${{ job.services.postgres.id }}
+          NADORIO_TEST_LEGACY_BILLING: '1'
       - run: npx playwright install --with-deps chromium
       - run: npm run test:browser
       - run: npm run typecheck

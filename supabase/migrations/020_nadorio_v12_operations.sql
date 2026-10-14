@@ -317,12 +317,38 @@ begin
 end $$;
 
 -- Organization subscriptions and signed provider event processing. Clients cannot forge payment state.
-create table public.organization_subscriptions (
+create table if not exists public.organization_subscriptions (
  club_id uuid primary key references public.clubs(id) on delete cascade,
  customer_id text unique,subscription_id text unique,plan_key text,status text not null default 'unconfigured',price_id text,
  current_period_end timestamptz,cancel_at_period_end boolean not null default false,last_event_at timestamptz,
  checkout_token uuid,checkout_plan text,checkout_reserved_until timestamptz,updated_at timestamptz not null default now()
 );
+-- Compatibility with the hosted legacy billing table inspected before this upgrade.
+-- Keep its id primary key, club_id unique key, commercial fields, and original external IDs.
+alter table public.organization_subscriptions
+ add column if not exists customer_id text,
+ add column if not exists subscription_id text,
+ add column if not exists price_id text,
+ add column if not exists last_event_at timestamptz,
+ add column if not exists checkout_token uuid,
+ add column if not exists checkout_plan text,
+ add column if not exists checkout_reserved_until timestamptz;
+alter table public.organization_subscriptions alter column status set default 'unconfigured';
+alter table public.organization_subscriptions alter column plan_key drop not null;
+alter table public.organization_subscriptions alter column plan_key drop default;
+do $$ begin
+ if exists(select 1 from information_schema.columns where table_schema='public' and table_name='organization_subscriptions' and column_name='external_customer_id') then
+  execute $map$update public.organization_subscriptions set customer_id=btrim(external_customer_id) where customer_id is null and btrim(external_customer_id) ~ '^cus_[a-zA-Z0-9]+$'$map$;
+ end if;
+ if exists(select 1 from information_schema.columns where table_schema='public' and table_name='organization_subscriptions' and column_name='external_subscription_id') then
+  execute $map$update public.organization_subscriptions set subscription_id=btrim(external_subscription_id) where subscription_id is null and btrim(external_subscription_id) ~ '^sub_[a-zA-Z0-9]+$'$map$;
+ end if;
+end $$;
+-- Duplicate provider IDs stop the transaction for review instead of merging or deleting records.
+create unique index if not exists v12_subscription_customer_unique on public.organization_subscriptions(customer_id);
+create unique index if not exists v12_subscription_provider_unique on public.organization_subscriptions(subscription_id);
+drop policy if exists "subscriptions tenant" on public.organization_subscriptions;
+revoke all on public.organization_subscriptions from anon,authenticated;
 create table public.subscription_invoices (
  id text primary key,club_id uuid not null references public.clubs(id) on delete cascade,status text not null,currency text not null,
  amount_due bigint not null,amount_paid bigint not null,hosted_url text,last_event_at timestamptz,created_at timestamptz not null,updated_at timestamptz not null default now()
@@ -335,6 +361,8 @@ declare s public.organization_subscriptions%rowtype;
 begin
  insert into public.organization_subscriptions(club_id) values(target_club) on conflict do nothing;
  select * into s from public.organization_subscriptions where club_id=target_club for update;
+ if (nullif(to_jsonb(s)->>'external_customer_id','') is not null and s.customer_id is null) or (nullif(to_jsonb(s)->>'external_subscription_id','') is not null and s.subscription_id is null) then raise exception 'Existing external billing identifiers require platform review before checkout';end if;
+ if s.subscription_id is not null and s.customer_id is null then raise exception 'Existing subscription is missing its customer identifier; platform review required';end if;
  if s.status in ('active','trialing','past_due','unpaid','incomplete','paused') then raise exception 'Manage your existing subscription through the billing portal';end if;
  if s.checkout_reserved_until>now() then
   if s.checkout_plan<>plan_value then raise exception 'A checkout for another plan is already open. Complete it or retry after it expires';end if;
