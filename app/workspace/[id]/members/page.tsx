@@ -1,2 +1,173 @@
-'use client';import {useEffect,useState} from 'react';import {useParams} from 'next/navigation';import WorkspaceHeader from '../../../../components/WorkspaceHeader';import {createClient} from '../../../../lib/supabase/client';
-export default function Page(){const {id}=useParams<{id:string}>();const [rows,setRows]=useState<any[]>([]),[types,setTypes]=useState<any[]>([]),[form,setForm]=useState<any>({full_name:'',email:'',member_number:'',membership_type_id:''}),[msg,setMsg]=useState('');async function load(){const sb=createClient();const [{data:r},{data:t}]=await Promise.all([sb.from('members').select('*,membership_types(name)').eq('club_id',id).order('full_name'),sb.from('membership_types').select('*').eq('club_id',id).eq('active',true)]);setRows(r||[]);setTypes(t||[])}useEffect(()=>{load()},[id]);async function add(){if(!form.full_name.trim())return setMsg('Enter a member name.');setMsg('');const sb=createClient();const {data:m,error}=await sb.from('members').insert({...form,club_id:id,membership_type_id:form.membership_type_id||null}).select().single();if(error)return setMsg(error.message);if(form.email&&m){const {data:{user}}=await sb.auth.getUser();const {error:inviteError}=await sb.from('club_invitations').insert({club_id:id,email:form.email,full_name:form.full_name,role:'member',member_id:m.id,invited_by:user?.id});if(inviteError){setMsg('Member added, but invitation could not be staged: '+inviteError.message);load();return}}setForm({full_name:'',email:'',member_number:'',membership_type_id:''});setMsg(form.email?'Member added. Login invitation staged.':'Member added.');load()}async function del(mid:string){if(!confirm('Remove this member record?'))return;const {error}=await createClient().from('members').delete().eq('club_id',id).eq('id',mid);if(error){setMsg(error.message);return}setMsg('Member removed.');load()}return <><WorkspaceHeader title="Members" subtitle="Manage member records and member login invitations"/><div className="panel"><div className="panelhead">Add member</div><div className="inlineForm"><input placeholder="Full name" value={form.full_name} onChange={e=>setForm({...form,full_name:e.target.value})}/><input placeholder="Email / login" value={form.email} onChange={e=>setForm({...form,email:e.target.value})}/><input placeholder="Member #" value={form.member_number} onChange={e=>setForm({...form,member_number:e.target.value})}/><select value={form.membership_type_id} onChange={e=>setForm({...form,membership_type_id:e.target.value})}><option value="">Membership type</option>{types.map(t=><option key={t.id} value={t.id}>{t.name}</option>)}</select><button className="button gradient" onClick={add}>Add Member</button></div>{msg&&<div className="successMsg">{msg}</div>}</div><div className="panel"><div className="panelhead">Member directory</div>{rows.length?rows.map(r=><div className="datarow five" key={r.id}><b>{r.full_name}</b><span>{r.email||'—'}</span><span>{r.member_number||'—'}</span><span>{r.membership_types?.name||'Unassigned'}</span><button className="textDanger" onClick={()=>del(r.id)}>Remove</button></div>):<div className="empty">No members yet.</div>}</div></>}
+"use client";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import WorkspaceHeader from "../../../../components/WorkspaceHeader";
+import { useWorkspace } from "../../../../components/WorkspaceShell";
+import { canUseModule, isAdmin } from "../../../../lib/modules";
+import { createClient } from "../../../../lib/supabase/client";
+export default function Page() {
+  const { access } = useWorkspace();
+  const { id } = useParams<{ id: string }>();
+  const [rows, setRows] = useState<any[]>([]),
+    [types, setTypes] = useState<any[]>([]),
+    [form, setForm] = useState<any>({
+      full_name: "",
+      email: "",
+      member_number: "",
+      membership_type_id: "",
+    }),
+    [msg, setMsg] = useState("");
+  async function load() {
+    const sb = createClient();
+    const [{ data: r }, { data: t }] = await Promise.all([
+      sb
+        .from("members")
+        .select("*,membership_types(name)")
+        .eq("club_id", id)
+        .order("full_name"),
+      sb
+        .from("membership_types")
+        .select("*")
+        .eq("club_id", id)
+        .eq("active", true),
+    ]);
+    setRows(r || []);
+    setTypes(t || []);
+  }
+  useEffect(() => {
+    load();
+  }, [id]);
+  async function add() {
+    if (!form.full_name.trim()) return setMsg("Enter a member name.");
+    setMsg("");
+    const sb = createClient();
+    const { data: m, error } = await sb
+      .from("members")
+      .insert({
+        ...form,
+        club_id: id,
+        membership_type_id: form.membership_type_id || null,
+      })
+      .select()
+      .single();
+    if (error) return setMsg(error.message);
+    if (form.email && m && isAdmin(access.role)) {
+      const {
+        data: { user },
+      } = await sb.auth.getUser();
+      const { error: inviteError } = await sb
+        .from("club_invitations")
+        .insert({
+          club_id: id,
+          email: form.email,
+          full_name: form.full_name,
+          role: "member",
+          member_id: m.id,
+          invited_by: user?.id,
+        });
+      if (inviteError) {
+        setMsg(
+          "Member added, but invitation could not be staged: " +
+            inviteError.message,
+        );
+        load();
+        return;
+      }
+    }
+    setForm({
+      full_name: "",
+      email: "",
+      member_number: "",
+      membership_type_id: "",
+    });
+    setMsg(
+      form.email && isAdmin(access.role)
+        ? "Member added. Login invitation staged. Send it from Staff & Team or People & Access."
+        : "Member added.",
+    );
+    load();
+  }
+  async function del(mid: string) {
+    if (!confirm("Remove this member record?")) return;
+    const { error } = await createClient()
+      .from("members")
+      .delete()
+      .eq("club_id", id)
+      .eq("id", mid);
+    if (error) {
+      setMsg(error.message);
+      return;
+    }
+    setMsg("Member removed.");
+    load();
+  }
+  return (
+    <>
+      <WorkspaceHeader
+        title="Members"
+        subtitle="Manage member records and member login invitations"
+      />
+      {canUseModule(access, "members", "create") && (
+        <div className="panel">
+          <div className="panelhead">Add member</div>
+          <div className="inlineForm">
+            <input
+              placeholder="Full name"
+              value={form.full_name}
+              onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+            />
+            <input
+              placeholder="Email / login"
+              value={form.email}
+              onChange={(e) => setForm({ ...form, email: e.target.value })}
+            />
+            <input
+              placeholder="Member #"
+              value={form.member_number}
+              onChange={(e) =>
+                setForm({ ...form, member_number: e.target.value })
+              }
+            />
+            <select
+              value={form.membership_type_id}
+              onChange={(e) =>
+                setForm({ ...form, membership_type_id: e.target.value })
+              }
+            >
+              <option value="">Membership type</option>
+              {types.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.name}
+                </option>
+              ))}
+            </select>
+            <button className="button gradient" onClick={add}>
+              Add Member
+            </button>
+          </div>
+          {msg && <div className="successMsg">{msg}</div>}
+        </div>
+      )}
+      <div className="panel">
+        <div className="panelhead">Member directory</div>
+        {rows.length ? (
+          rows.map((r) => (
+            <div className="datarow five" key={r.id}>
+              <b>{r.full_name}</b>
+              <span>{r.email || "—"}</span>
+              <span>{r.member_number || "—"}</span>
+              <span>{r.membership_types?.name || "Unassigned"}</span>
+              {canUseModule(access, "members", "delete") && (
+                <button className="textDanger" onClick={() => del(r.id)}>
+                  Remove
+                </button>
+              )}
+            </div>
+          ))
+        ) : (
+          <div className="empty">No members yet.</div>
+        )}
+      </div>
+    </>
+  );
+}

@@ -1,21 +1,224 @@
-'use client';
-import Link from 'next/link';import {useEffect,useState} from 'react';import {useParams} from 'next/navigation';
-import WorkspaceHeader from '../../../../components/WorkspaceHeader';import {createClient} from '../../../../lib/supabase/client';
-type Tournament={id:string;name:string;starts_at:string;format:string|null;entry_fee:number|null};
-export default function GolfPage(){const {id}=useParams<{id:string}>();const [rows,setRows]=useState<Tournament[]>([]);const [admin,setAdmin]=useState(false);const [allowed,setAllowed]=useState(false);const [loading,setLoading]=useState(true);const [busy,setBusy]=useState(false);const [error,setError]=useState('');const [notice,setNotice]=useState('');
- const [f,setF]=useState({name:'',starts_at:'',format:'',entry_fee:0});
- useEffect(()=>{let active=true;(async()=>{const sb=createClient();const {data:{user}}=await sb.auth.getUser();if(!user){if(active){setError('Sign in required.');setLoading(false)}return;}
- const [{data:cu},{data:mod},{data:superUser},{data:items,error:loadError}]=await Promise.all([
- sb.from('club_users').select('role,active').eq('club_id',id).eq('user_id',user.id).maybeSingle(),sb.from('club_modules').select('licensed,club_enabled,member_visible').eq('club_id',id).eq('module_key','golf').maybeSingle(),sb.rpc('is_super_admin'),sb.from('golf_tournaments').select('id,name,starts_at,format,entry_fee').eq('club_id',id).order('starts_at',{ascending:true}).limit(100)]);
- const isAdmin=superUser===true||(cu?.active===true&&['owner','admin'].includes(cu.role));const permitted=!!mod?.licensed&&!!mod?.club_enabled&&(isAdmin||(cu?.active===true&&(cu.role!=='member'||mod.member_visible===true)));
- if(active){setAdmin(isAdmin);setAllowed(permitted);setRows(permitted?(items||[]) as Tournament[]:[]);setError(!permitted?'Golf is not enabled for your organization role.':loadError?.message||'');setLoading(false)}})();return()=>{active=false}},[id]);
- async function add(){if(!admin||!allowed)return;setError('');setNotice('');if(!f.name.trim()||!f.starts_at||f.name.length>120||!Number.isFinite(f.entry_fee)||f.entry_fee<0){setError('Enter a valid tournament name, start date and nonnegative entry fee.');return;}
- setBusy(true);const sb=createClient();const {data,error:saveError}=await sb.from('golf_tournaments').insert({club_id:id,name:f.name.trim(),starts_at:new Date(f.starts_at).toISOString(),format:f.format.trim(),entry_fee:f.entry_fee}).select('id,name,starts_at,format,entry_fee').single();
- if(saveError)setError(saveError.message);else if(data){setRows(old=>[...old,data as Tournament].sort((a,b)=>a.starts_at.localeCompare(b.starts_at)));setF({name:'',starts_at:'',format:'',entry_fee:0});setNotice('Tournament created.')}setBusy(false);
- }
- return <><WorkspaceHeader title="Golf & Tournaments" subtitle="Club tournaments, scoring and member golf services"/>
- {loading?<div className="n10GolfPanel" role="status">Loading golf services…</div>:!allowed?<div className="n10GolfPanel" role="alert">{error||'Golf is not available.'}</div>:<>
- <div className="n10GolfPanel"><h2>My golf</h2><p><Link href={`/workspace/${id}/scorecard`}>My Scorecard →</Link> · <Link href={`/workspace/${id}/golf-index`}>My Golf Index →</Link></p></div>
- {admin&&<div className="n10GolfPanel"><h2>Create tournament</h2><div className="n10GolfForm"><label>Tournament name<input maxLength={120} value={f.name} onChange={e=>setF({...f,name:e.target.value})}/></label><label>Start date<input type="datetime-local" value={f.starts_at} onChange={e=>setF({...f,starts_at:e.target.value})}/></label><label>Format<input value={f.format} onChange={e=>setF({...f,format:e.target.value})}/></label><label>Entry fee<input type="number" min="0" step="0.01" value={f.entry_fee} onChange={e=>setF({...f,entry_fee:Number(e.target.value)})}/></label></div><button type="button" disabled={busy} onClick={add}>{busy?'Creating…':'Create tournament'}</button>{notice&&<p role="status">{notice}</p>}{error&&<p role="alert">{error}</p>}</div>}
- <div className="n10GolfPanel"><h2>Tournament calendar</h2><div className="n10GolfHistory">{rows.map(x=><div key={x.id}><span><b>{x.name}</b><br/><small>{new Date(x.starts_at).toLocaleString()}</small></span><span>{x.format||'Open format'} · ${Number(x.entry_fee||0).toFixed(2)}</span></div>)}{rows.length===0&&<p>No tournaments scheduled.</p>}</div></div></>}</>;
+"use client";
+import Link from "next/link";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
+import WorkspaceHeader from "../../../../components/WorkspaceHeader";
+import { createClient } from "../../../../lib/supabase/client";
+import { useWorkspace } from "../../../../components/WorkspaceShell";
+import { canUseModule } from "../../../../lib/modules";
+type Tournament = {
+  id: string;
+  name: string;
+  starts_at: string;
+  format: string | null;
+  entry_fee: number | null;
+};
+export default function GolfPage() {
+  const { access } = useWorkspace();
+  const { id } = useParams<{ id: string }>();
+  const [rows, setRows] = useState<Tournament[]>([]);
+  const [admin, setAdmin] = useState(false);
+  const [allowed, setAllowed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [f, setF] = useState({
+    name: "",
+    starts_at: "",
+    format: "",
+    entry_fee: 0,
+  });
+  useEffect(() => {
+    let active = true;
+    (async () => {
+      const sb = createClient();
+      const {
+        data: { user },
+      } = await sb.auth.getUser();
+      if (!user) {
+        if (active) {
+          setError("Sign in required.");
+          setLoading(false);
+        }
+        return;
+      }
+      const [
+        { data: cu },
+        { data: mod },
+        { data: superUser },
+        { data: items, error: loadError },
+      ] = await Promise.all([
+        sb
+          .from("club_users")
+          .select("role,active")
+          .eq("club_id", id)
+          .eq("user_id", user.id)
+          .maybeSingle(),
+        sb
+          .from("club_modules")
+          .select("licensed,club_enabled,member_visible")
+          .eq("club_id", id)
+          .eq("module_key", "golf")
+          .maybeSingle(),
+        sb.rpc("is_super_admin"),
+        sb
+          .from("golf_tournaments")
+          .select("id,name,starts_at,format,entry_fee")
+          .eq("club_id", id)
+          .order("starts_at", { ascending: true })
+          .limit(100),
+      ]);
+      const isAdmin = canUseModule(access, "golf", "create");
+      const permitted = canUseModule(access, "golf");
+      if (active) {
+        setAdmin(isAdmin);
+        setAllowed(permitted);
+        setRows(permitted ? ((items || []) as Tournament[]) : []);
+        setError(
+          !permitted
+            ? "Golf is not enabled for your organization role."
+            : loadError?.message || "",
+        );
+        setLoading(false);
+      }
+    })();
+    return () => {
+      active = false;
+    };
+  }, [id, access]);
+  async function add() {
+    if (!admin || !allowed) return;
+    setError("");
+    setNotice("");
+    if (
+      !f.name.trim() ||
+      !f.starts_at ||
+      f.name.length > 120 ||
+      !Number.isFinite(f.entry_fee) ||
+      f.entry_fee < 0
+    ) {
+      setError(
+        "Enter a valid tournament name, start date and nonnegative entry fee.",
+      );
+      return;
+    }
+    setBusy(true);
+    const sb = createClient();
+    const { data, error: saveError } = await sb
+      .from("golf_tournaments")
+      .insert({
+        club_id: id,
+        name: f.name.trim(),
+        starts_at: new Date(f.starts_at).toISOString(),
+        format: f.format.trim(),
+        entry_fee: f.entry_fee,
+      })
+      .select("id,name,starts_at,format,entry_fee")
+      .single();
+    if (saveError) setError(saveError.message);
+    else if (data) {
+      setRows((old) =>
+        [...old, data as Tournament].sort((a, b) =>
+          a.starts_at.localeCompare(b.starts_at),
+        ),
+      );
+      setF({ name: "", starts_at: "", format: "", entry_fee: 0 });
+      setNotice("Tournament created.");
+    }
+    setBusy(false);
+  }
+  return (
+    <>
+      <WorkspaceHeader
+        title="Golf & Tournaments"
+        subtitle="Club tournaments, scoring and member golf services"
+      />
+      {loading ? (
+        <div className="n10GolfPanel" role="status">
+          Loading golf services…
+        </div>
+      ) : !allowed ? (
+        <div className="n10GolfPanel" role="alert">
+          {error || "Golf is not available."}
+        </div>
+      ) : (
+        <>
+          <div className="n10GolfPanel">
+            <h2>My golf</h2>
+            <p>
+              <Link href={`/workspace/${id}/scorecard`}>My Scorecard →</Link> ·{" "}
+              <Link href={`/workspace/${id}/golf-index`}>My Golf Index →</Link>
+            </p>
+          </div>
+          {admin && (
+            <div className="n10GolfPanel">
+              <h2>Create tournament</h2>
+              <div className="n10GolfForm">
+                <label>
+                  Tournament name
+                  <input
+                    maxLength={120}
+                    value={f.name}
+                    onChange={(e) => setF({ ...f, name: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Start date
+                  <input
+                    type="datetime-local"
+                    value={f.starts_at}
+                    onChange={(e) => setF({ ...f, starts_at: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Format
+                  <input
+                    value={f.format}
+                    onChange={(e) => setF({ ...f, format: e.target.value })}
+                  />
+                </label>
+                <label>
+                  Entry fee
+                  <input
+                    type="number"
+                    min="0"
+                    step="0.01"
+                    value={f.entry_fee}
+                    onChange={(e) =>
+                      setF({ ...f, entry_fee: Number(e.target.value) })
+                    }
+                  />
+                </label>
+              </div>
+              <button type="button" disabled={busy} onClick={add}>
+                {busy ? "Creating…" : "Create tournament"}
+              </button>
+              {notice && <p role="status">{notice}</p>}
+              {error && <p role="alert">{error}</p>}
+            </div>
+          )}
+          <div className="n10GolfPanel">
+            <h2>Tournament calendar</h2>
+            <div className="n10GolfHistory">
+              {rows.map((x) => (
+                <div key={x.id}>
+                  <span>
+                    <b>{x.name}</b>
+                    <br />
+                    <small>{new Date(x.starts_at).toLocaleString()}</small>
+                  </span>
+                  <span>
+                    {x.format || "Open format"} · $
+                    {Number(x.entry_fee || 0).toFixed(2)}
+                  </span>
+                </div>
+              ))}
+              {rows.length === 0 && <p>No tournaments scheduled.</p>}
+            </div>
+          </div>
+        </>
+      )}
+    </>
+  );
 }

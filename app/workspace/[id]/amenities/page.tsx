@@ -1,1 +1,85 @@
-'use client';import {useEffect,useState} from 'react';import {useParams} from 'next/navigation';import WorkspaceHeader from '../../../../components/WorkspaceHeader';import {createClient} from '../../../../lib/supabase/client';export default function Page(){const {id}=useParams<{id:string}>();const [rows,setRows]=useState<any[]>([]),[name,setName]=useState(''),[type,setType]=useState('clubhouse');async function load(){const {data}=await createClient().from('amenities').select('*').eq('club_id',id).order('name');setRows(data||[])}useEffect(()=>{load()},[id]);async function add(){if(!name)return;await createClient().from('amenities').insert({club_id:id,name,amenity_type:type});setName('');load()}return <><WorkspaceHeader title="Amenities" subtitle="Configure the facilities available at your club"/><div className="panel"><div className="panelhead">Add amenity</div><div className="inlineForm"><input placeholder="Amenity name" value={name} onChange={e=>setName(e.target.value)}/><select value={type} onChange={e=>setType(e.target.value)}><option>clubhouse</option><option>golf</option><option>pool</option><option>fitness</option><option>tennis</option><option>dining</option><option>other</option></select><button className="button gradient" onClick={add}>Add</button></div></div><div className="panel"><div className="panelhead">Club amenities</div>{rows.map(x=><div className="datarow" key={x.id}><b>{x.name}</b><span className="chip">{x.amenity_type}</span><span>{x.active?'Active':'Inactive'}</span></div>)}{!rows.length&&<div className="empty">No amenities configured.</div>}</div></>}
+"use client";
+import { useEffect, useState, type FormEvent } from "react";
+import { useWorkspace } from "../../../../components/WorkspaceShell";
+import { createClient } from "../../../../lib/supabase/client";
+import { canUseModule } from "../../../../lib/modules";
+export default function Amenities() {
+  const { club, access } = useWorkspace();
+  const [rows, setRows] = useState<any[]>([]),
+    [name, setName] = useState(""),
+    [type, setType] = useState("general"),
+    [message, setMessage] = useState(""),
+    [busy, setBusy] = useState(false);
+  async function load() {
+    const { data, error } = await createClient()
+      .from("amenities")
+      .select("*")
+      .eq("club_id", club.id)
+      .order("name");
+    if (error) setMessage(error.message);
+    else setRows(data || []);
+  }
+  useEffect(() => {
+    void load();
+  }, [club.id]);
+  async function add(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await createClient()
+      .from("amenities")
+      .insert({
+        club_id: club.id,
+        name: name.trim(),
+        amenity_type: type.trim(),
+      });
+    setMessage(error?.message || "Amenity added.");
+    if (!error) {
+      setName("");
+      await load();
+    }
+    setBusy(false);
+  }
+  return (
+    <>
+      <h1>Amenities</h1>
+      <p>Facilities and services at {club.name}.</p>
+      {message && <p role="status">{message}</p>}
+      {canUseModule(access, "amenities", "create") && (
+        <form className="panel v11Form" onSubmit={add}>
+          <label>
+            Amenity name
+            <input
+              required
+              maxLength={120}
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+            />
+          </label>
+          <label>
+            Category
+            <input
+              required
+              maxLength={80}
+              value={type}
+              onChange={(e) => setType(e.target.value)}
+            />
+          </label>
+          <button className="button gradient" disabled={busy || !name.trim()}>
+            Add amenity
+          </button>
+        </form>
+      )}
+      <div className="v11Grid">
+        {rows.map((r) => (
+          <section className="panel" key={r.id}>
+            <h2>{r.name}</h2>
+            <p>
+              {r.amenity_type} · {r.active ? "Active" : "Inactive"}
+            </p>
+          </section>
+        ))}
+      </div>
+      {!rows.length && <p>No amenities to display.</p>}
+    </>
+  );
+}

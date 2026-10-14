@@ -1,3 +1,102 @@
-'use client';
-import {useEffect,useState} from 'react';import Shell from '../../components/Shell';import {createClient} from '../../lib/supabase/client';
-export default function Analytics(){const [s,setS]=useState<any>({}),[industries,setIndustries]=useState<any[]>([]),[plans,setPlans]=useState<any[]>([]);useEffect(()=>{(async()=>{const sb=createClient();const [{data:clubs},{count:users},{count:members},{count:events},{count:checkins},{count:reservations}]=await Promise.all([sb.from('clubs').select('id,status,plan,organization_type,subscription_status'),sb.from('club_users').select('*',{count:'exact',head:true}).eq('active',true),sb.from('members').select('*',{count:'exact',head:true}),sb.from('club_events').select('*',{count:'exact',head:true}),sb.from('access_log').select('*',{count:'exact',head:true}),sb.from('resource_reservations').select('*',{count:'exact',head:true})]);const cs=clubs||[];const group=(key:string)=>Object.entries(cs.reduce((a:any,c:any)=>{const k=c[key]||'unknown';a[k]=(a[k]||0)+1;return a},{})).map(([name,count])=>({name,count}));setIndustries(group('organization_type'));setPlans(group('plan'));setS({clubs:cs.length,active:cs.filter((c:any)=>c.status==='active').length,users:users||0,members:members||0,events:events||0,checkins:checkins||0,reservations:reservations||0})})()},[]);return <Shell><div className="v6PageHead"><div><div className="eyebrow cyan">PLATFORM INTELLIGENCE</div><h1>NADORIO Analytics</h1><p>See adoption across organizations, industries and the operational systems running on NADORIO.</p></div></div><div className="portalMetricGrid"><div><div><small>Organizations</small><strong>{s.clubs||0}</strong><p>{s.active||0} active</p></div></div><div><div><small>Platform users</small><strong>{s.users||0}</strong><p>Active organization accounts</p></div></div><div><div><small>People / members</small><strong>{s.members||0}</strong><p>Managed records</p></div></div><div><div><small>Access activity</small><strong>{s.checkins||0}</strong><p>Recorded check-ins</p></div></div></div><div className="analyticsSplit"><div className="panel"><div className="panelhead">Organizations by industry</div>{industries.map((x:any)=><div className="analyticsRow" key={x.name}><span>{String(x.name).replaceAll('_',' ')}</span><b>{x.count}</b></div>)}</div><div className="panel"><div className="panelhead">Plan adoption</div>{plans.map((x:any)=><div className="analyticsRow" key={x.name}><span>NADORIO {x.name}</span><b>{x.count}</b></div>)}</div></div><div className="cards"><div className="card"><div className="label">Events</div><div className="metric">{s.events||0}</div></div><div className="card"><div className="label">Reservations</div><div className="metric">{s.reservations||0}</div></div></div></Shell>}
+"use client";
+import { useEffect, useState } from "react";
+import Shell from "../../components/Shell";
+import { createClient } from "../../lib/supabase/client";
+import { getOrganizationType } from "../../lib/organization-types";
+export default function Analytics() {
+  const [clubs, setClubs] = useState<any[]>([]),
+    [metrics, setMetrics] = useState<Record<string, number>>({}),
+    [error, setError] = useState(""),
+    [loading, setLoading] = useState(true);
+  useEffect(() => {
+    (async () => {
+      try {
+        const sb = createClient();
+        const orgs = await sb
+          .from("clubs")
+          .select("id,status,plan,organization_type");
+        if (orgs.error) throw orgs.error;
+        setClubs(orgs.data || []);
+        const tables = {
+          Profiles: "profiles",
+          "Member records": "members",
+          Events: "club_events",
+          "Check-ins": "access_log",
+        };
+        const entries = await Promise.all(
+          Object.entries(tables).map(async ([label, table]) => {
+            const { count, error } = await sb
+              .from(table)
+              .select("*", { count: "exact", head: true });
+            if (error) throw error;
+            return [label, count ?? 0] as const;
+          }),
+        );
+        setMetrics(Object.fromEntries(entries));
+      } catch (e: any) {
+        setError(e.message);
+      } finally {
+        setLoading(false);
+      }
+    })();
+  }, []);
+  const group = (key: string) =>
+    Object.entries(
+      clubs.reduce((acc: Record<string, number>, c) => {
+        const label =
+          key === "organization_type"
+            ? getOrganizationType(c[key]).label
+            : c[key] || "Unassigned";
+        acc[label] = (acc[label] || 0) + 1;
+        return acc;
+      }, {}),
+    );
+  return (
+    <Shell>
+      <h1>Platform analytics</h1>
+      <p>
+        Database counts and recorded organization configuration. No estimated
+        revenue or demonstration data.
+      </p>
+      {error && (
+        <p className="error" role="alert">
+          Metrics could not be verified: {error}
+        </p>
+      )}
+      {loading ? (
+        <p role="status">Loading analytics…</p>
+      ) : (
+        !error && (
+          <>
+            <div className="v11Grid">
+              {Object.entries({
+                Organizations: clubs.length,
+                "Active organizations": clubs.filter(
+                  (c) => c.status === "active",
+                ).length,
+                ...metrics,
+              }).map(([label, value]) => (
+                <section className="panel" key={label}>
+                  <p>{label}</p>
+                  <h2>{value}</h2>
+                </section>
+              ))}
+            </div>
+            <div className="v11Grid">
+              {["organization_type", "plan"].map((key) => (
+                <section className="panel" key={key}>
+                  <h2>{key === "plan" ? "Plans" : "Organization types"}</h2>
+                  {group(key).map(([label, count]) => (
+                    <p key={label}>
+                      {label}: <b>{count}</b>
+                    </p>
+                  ))}
+                </section>
+              ))}
+            </div>
+          </>
+        )
+      )}
+    </Shell>
+  );
+}

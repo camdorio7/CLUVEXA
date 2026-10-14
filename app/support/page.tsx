@@ -1,2 +1,200 @@
-'use client';import {FormEvent,useEffect,useState} from 'react';import Shell from '../../components/Shell';import {LifeBuoy,MessageSquareText,Activity,CheckCircle2} from 'lucide-react';import {createClient} from '../../lib/supabase/client';
-export default function Page(){const [cases,setCases]=useState<any[]>([]),[clubs,setClubs]=useState<any[]>([]),[club,setClub]=useState(''),[subject,setSubject]=useState(''),[detail,setDetail]=useState('');async function load(){const sb=createClient();const [{data:c},{data:o}]=await Promise.all([sb.from('support_cases').select('*,clubs(name)').order('created_at',{ascending:false}),sb.from('clubs').select('id,name').order('name')]);setCases(c||[]);setClubs(o||[])}useEffect(()=>{load()},[]);async function add(e:FormEvent){e.preventDefault();const sb=createClient();const {data:{user}}=await sb.auth.getUser();await sb.from('support_cases').insert({club_id:club||null,opened_by:user?.id,subject,detail,status:'open'});setSubject('');setDetail('');load()}async function status(id:string,s:string){await createClient().from('support_cases').update({status:s,updated_at:new Date().toISOString()}).eq('id',id);load()}const open=cases.filter(x=>x.status!=='resolved'&&x.status!=='closed');return <Shell><div className="v6PageHead"><div><div className="eyebrow cyan">CUSTOMER SUCCESS</div><h1>Support Center</h1><p>Track organization requests, follow-up and resolution from CD7's control center.</p></div></div><div className="portalMetricGrid"><div><span className="metricIcon"><LifeBuoy/></span><div><small>Open cases</small><strong>{open.length}</strong><p>Need customer follow-up</p></div></div><div><span className="metricIcon"><MessageSquareText/></span><div><small>Total cases</small><strong>{cases.length}</strong><p>Across all organizations</p></div></div><div><span className="metricIcon"><Activity/></span><div><small>Platform status</small><strong>Live</strong><p>Systems operational</p></div></div></div><div className="supportGrid"><form className="panel form" onSubmit={add}><div className="panelhead">Open support case</div><div className="field"><label>Organization</label><select value={club} onChange={e=>setClub(e.target.value)}><option value="">Platform / general</option>{clubs.map(c=><option value={c.id} key={c.id}>{c.name}</option>)}</select></div><div className="field"><label>Subject</label><input value={subject} onChange={e=>setSubject(e.target.value)} required/></div><div className="field"><label>Details</label><textarea value={detail} onChange={e=>setDetail(e.target.value)} rows={5}/></div><button className="button gradient"><LifeBuoy/> Create case</button></form><div className="panel"><div className="panelhead">Customer cases</div>{cases.length===0?<div className="emptyState"><CheckCircle2/><b>No support cases yet</b><p>New customer requests will appear here.</p></div>:cases.map(x=><div className="supportCase" key={x.id}><div><span className={'chip '+(x.status==='open'?'warn':'good')}>{x.status}</span><b>{x.subject}</b><p>{x.clubs?.name||'NADORIO Platform'} · {x.detail||'No additional detail'}</p></div><select value={x.status} onChange={e=>status(x.id,e.target.value)}><option value="open">Open</option><option value="in_progress">In progress</option><option value="waiting">Waiting</option><option value="resolved">Resolved</option><option value="closed">Closed</option></select></div>)}</div></div></Shell>}
+"use client";
+import { useEffect, useState, type FormEvent } from "react";
+import Shell from "../../components/Shell";
+import { createClient } from "../../lib/supabase/client";
+export default function Support() {
+  const [rows, setRows] = useState<any[]>([]),
+    [clubs, setClubs] = useState<any[]>([]),
+    [club, setClub] = useState(""),
+    [subject, setSubject] = useState(""),
+    [detail, setDetail] = useState(""),
+    [priority, setPriority] = useState("normal"),
+    [message, setMessage] = useState(""),
+    [loading, setLoading] = useState(true),
+    [busy, setBusy] = useState(false);
+  async function load() {
+    try {
+      const sb = createClient();
+      const [cases, orgs] = await Promise.all([
+        sb
+          .from("support_cases")
+          .select("*,clubs(name)")
+          .order("created_at", { ascending: false })
+          .limit(200),
+        sb.from("clubs").select("id,name").order("name"),
+      ]);
+      if (cases.error || orgs.error) throw cases.error || orgs.error;
+      setRows(cases.data || []);
+      setClubs(orgs.data || []);
+    } catch (e: any) {
+      setMessage(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => {
+    void load();
+  }, []);
+  async function add(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setMessage("");
+    try {
+      const sb = createClient();
+      const {
+        data: { user },
+      } = await sb.auth.getUser();
+      const { error } = await sb
+        .from("support_cases")
+        .insert({
+          club_id: club || null,
+          opened_by: user?.id,
+          subject: subject.trim(),
+          detail,
+          priority,
+        });
+      if (error) throw error;
+      setSubject("");
+      setDetail("");
+      setMessage("Support case created.");
+      await load();
+    } catch (e: any) {
+      setMessage(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function save(row: any) {
+    setBusy(true);
+    const { error } = await createClient()
+      .from("support_cases")
+      .update({
+        status: row.status,
+        priority: row.priority,
+        resolution: row.resolution,
+        updated_at: new Date().toISOString(),
+      })
+      .eq("id", row.id);
+    setMessage(error?.message || "Case updated.");
+    setBusy(false);
+    if (!error) await load();
+  }
+  function edit(id: string, patch: any) {
+    setRows((old) => old.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+  }
+  return (
+    <Shell>
+      <h1>Support cases</h1>
+      <p>
+        Internal CD7 case tracking. No inbound support email or automatic
+        notifications are connected.
+      </p>
+      {message && (
+        <p className="v11Notice" role="status">
+          {message}
+        </p>
+      )}
+      <form className="panel v11Form" onSubmit={add}>
+        <h2>Open a case</h2>
+        <label>
+          Organization
+          <select value={club} onChange={(e) => setClub(e.target.value)}>
+            <option value="">Platform / general</option>
+            {clubs.map((c) => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label>
+          Subject
+          <input
+            value={subject}
+            maxLength={200}
+            required
+            onChange={(e) => setSubject(e.target.value)}
+          />
+        </label>
+        <label>
+          Details
+          <textarea
+            value={detail}
+            maxLength={10000}
+            onChange={(e) => setDetail(e.target.value)}
+          />
+        </label>
+        <label>
+          Priority
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value)}
+          >
+            {["low", "normal", "high", "urgent"].map((p) => (
+              <option key={p}>{p}</option>
+            ))}
+          </select>
+        </label>
+        <button className="button gradient" disabled={busy || !subject.trim()}>
+          Create case
+        </button>
+      </form>
+      {loading && <p role="status">Loading cases…</p>}
+      <div className="v11Grid">
+        {rows.map((row) => (
+          <form
+            className="panel v11Form"
+            key={row.id}
+            onSubmit={(e) => {
+              e.preventDefault();
+              void save(row);
+            }}
+          >
+            <h2>{row.subject}</h2>
+            <p>
+              {row.clubs?.name || "Platform"} ·{" "}
+              {new Date(row.created_at).toLocaleDateString()}
+            </p>
+            <p>{row.detail}</p>
+            <label>
+              Status
+              <select
+                value={row.status}
+                onChange={(e) => edit(row.id, { status: e.target.value })}
+              >
+                {["open", "in_progress", "waiting", "resolved", "closed"].map(
+                  (s) => (
+                    <option key={s}>{s}</option>
+                  ),
+                )}
+              </select>
+            </label>
+            <label>
+              Priority
+              <select
+                value={row.priority}
+                onChange={(e) => edit(row.id, { priority: e.target.value })}
+              >
+                {["low", "normal", "high", "urgent"].map((p) => (
+                  <option key={p}>{p}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Resolution / follow-up notes
+              <textarea
+                value={row.resolution || ""}
+                maxLength={10000}
+                onChange={(e) => edit(row.id, { resolution: e.target.value })}
+              />
+            </label>
+            <button className="button secondary" disabled={busy}>
+              Save case
+            </button>
+          </form>
+        ))}
+      </div>
+      {!loading && !rows.length && <p>No cases recorded.</p>}
+    </Shell>
+  );
+}

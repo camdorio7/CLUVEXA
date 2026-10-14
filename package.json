@@ -1,13 +1,16 @@
 {
   "name": "nadorio",
-  "version": "10.0.0-rc.1",
+  "version": "11.0.0-rc.1",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
     "check:release": "node scripts/check-release.mjs",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit --incremental false",
+    "test": "node --experimental-strip-types --test tests/*.test.mjs",
+    "test:database": "node scripts/test-database.mjs",
+    "test:browser": "playwright test"
   },
   "dependencies": {
     "@supabase/ssr": "latest",
@@ -18,9 +21,11 @@
     "react-dom": "latest"
   },
   "devDependencies": {
+    "@playwright/test": "1.64.0",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",
+    "prettier": "3.9.10",
     "typescript": "latest"
   }
 }

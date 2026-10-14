@@ -1,138 +1,212 @@
-'use client';
-
-import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
-import { useParams, usePathname, useRouter } from 'next/navigation';
-import { Building2, Bell, CalendarDays, ChevronDown, Clock3, CreditCard, Flag, Home, LogOut, Menu, Settings, ShieldCheck, UserRound, UsersRound, X } from 'lucide-react';
-import { createClient } from '../lib/supabase/client';
-import NadorioLogo from './NadorioLogo';
-import { organizationTheme } from '../lib/organization-theme';
-
-const defs: Record<string, [string, string]> = {
-  overview: ['', 'Home'], members: ['/members', 'Member Directory'], memberships: ['/memberships', 'Memberships'],
-  amenities: ['/amenities', 'Amenities'], access: ['/access', 'Access & Guests'], events: ['/events', 'Events'],
-  tee_sheet: ['/tee-sheet', 'Tee Sheet'], golf: ['/golf', 'Golf & Tournaments'], staff: ['/staff', 'Staff'],
-  operations: ['/operations', 'Operations'], communications: ['/communications', 'Communications'], reports: ['/reports', 'Reports'],
-  website_management: ['/website', 'Website Management'], website_builder: ['/site-builder', 'Website Builder'], email_center: ['/email-center', 'Email Center'], connected_platforms: ['/platforms', 'Connected Platforms'], documents: ['/documents','Documents'], reservations: ['/reservations','Reservations'], automations: ['/automations','Automations'], intelligence: ['/intelligence','Intelligence'],
+"use client";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  type CSSProperties,
+} from "react";
+import Link from "next/link";
+import { useParams, usePathname, useRouter } from "next/navigation";
+import { createClient } from "../lib/supabase/client";
+import { loadWorkspaceAccess } from "../lib/access-context";
+import {
+  type AccessContext,
+  isAdmin,
+  navigationFor,
+  canUseModule,
+  workspaceRouteAccess,
+} from "../lib/modules";
+import { getOrganizationType } from "../lib/organization-types";
+import { organizationTheme } from "../lib/organization-theme";
+import PortalFrame, { type NavItem } from "./PortalFrame";
+export type WorkspaceContext = {
+  club: any;
+  access: AccessContext;
+  userId: string;
+  refresh: () => void;
 };
-
-const groups = [
-  { label: 'People & Access', keys: ['members', 'memberships', 'access'] },
-  { label: 'Events & Services', keys: ['events', 'amenities', 'tee_sheet', 'golf'] },
-  { label: 'Team & Operations', keys: ['staff', 'operations'] },
-  { label: 'Engage & Insights', keys: ['communications', 'documents', 'reports', 'intelligence', 'connected_platforms', 'website_management', 'website_builder', 'email_center'] },
-  { label: 'Platform', keys: ['reservations', 'automations'] },
-];
-
-export default function WorkspaceShell({ children }: { children: React.ReactNode }) {
-  const params = useParams<{ id: string }>();
-  const id = params.id;
+const Context = createContext<WorkspaceContext | null>(null);
+export function useWorkspace() {
+  const value = useContext(Context);
+  if (!value) throw new Error("Workspace context is unavailable");
+  return value;
+}
+export default function WorkspaceShell({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const { id } = useParams<{ id: string }>();
   const path = usePathname();
   const router = useRouter();
-  const cacheKey = `nadorio:workspace:${id}`;
-  // Never trust cached roles or organization data for the initial render.
-  // A previous user could have signed out on this shared device.
-  const [club, setClub] = useState<any>(null);
-  const [role, setRole] = useState('');
-  const [mods, setMods] = useState<any[]>([]);
-  const [ready, setReady] = useState(false);
-  const [mobile, setMobile] = useState(false);
-  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({});
-
+  const [data, setData] = useState<Omit<WorkspaceContext, "refresh"> | null>(
+    null,
+  );
+  const [error, setError] = useState("");
+  const [revision, setRevision] = useState(0);
   useEffect(() => {
-    // Next.js prefetches visible links on demand; avoid preloading every module.
-    setReady(false);
+    let live = true;
+    setData(null);
+    setError("");
     (async () => {
-      const sb = createClient();
-      const { data: { user } } = await sb.auth.getUser();
-      if (!user) { router.replace('/login'); return; }
-      const [{ data: c }, { data: cu }, { data: p }, { data: isSuper }, { data: m }, { data: perms }] = await Promise.all([
-        sb.from('clubs').select('*').eq('id', id).single(),
-        sb.from('club_users').select('role,active').eq('club_id', id).eq('user_id', user.id).maybeSingle(),
-        sb.from('profiles').select('platform_role').eq('id', user.id).maybeSingle(),
-        sb.rpc('is_super_admin'),
-        sb.from('club_modules').select('module_key,licensed,club_enabled,member_visible,nav_label,sort_order').eq('club_id', id).eq('licensed', true).eq('club_enabled', true).order('sort_order'),
-        sb.from('club_user_permissions').select('module_key,can_view').eq('club_id', id).eq('user_id', user.id),
-      ]);
-      const r = (isSuper === true || p?.platform_role === 'super_admin') ? 'super_admin' : cu?.role;
-      if (!c || !r || (!cu?.active && r !== 'super_admin')) { router.replace('/login?error=unauthorized'); return; }
-      if (c.status !== 'active' && r !== 'super_admin') { router.replace('/login?error=club-inactive'); return; }
-      const allowed = new Set((perms || []).filter((x: any) => x.can_view).map((x: any) => x.module_key));
-      const visibleMods = (m || []).filter((x: any) => (['owner', 'admin', 'super_admin'].includes(r) || (r === 'member' ? x.member_visible === true : allowed.has(x.module_key))));
-      setClub(c); setRole(r); setMods(visibleMods); setReady(true);
-      try { sessionStorage.setItem(cacheKey, JSON.stringify({ club: c, role: r, mods: visibleMods })); } catch {}
+      try {
+        const sb = createClient();
+        const {
+          data: { user },
+          error,
+        } = await sb.auth.getUser();
+        if (error || !user) {
+          router.replace("/login");
+          return;
+        }
+        const result = await loadWorkspaceAccess(sb, id, user.id);
+        if (live) setData({ ...result, userId: user.id });
+      } catch (e) {
+        if (live)
+          setError(
+            e instanceof Error ? e.message : "Unable to open this workspace.",
+          );
+      }
     })();
-  }, [id, router, cacheKey]);
-
-  const map = useMemo(() => new Map(mods.map((x: any) => [x.module_key, x])), [mods]);
-  const member = role === 'member';
-  const admin = ['owner', 'admin', 'super_admin'].includes(role);
-  const closeMobile = () => setMobile(false);
-  useEffect(() => { setMobile(false); }, [path]);
-  useEffect(() => {
-    if (!mobile) return;
-    const onKeyDown = (event: KeyboardEvent) => { if (event.key === 'Escape') setMobile(false); };
-    window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
-  }, [mobile]);
-  async function out() { await createClient().auth.signOut(); router.replace('/login'); }
-
-  if (!ready || !club) return <main className="workspaceBoot" aria-label="Opening workspace" />;
-
-  const staffWorkspace = !member && !admin;
-  const theme = organizationTheme(club.primary_color) as React.CSSProperties;
-
-  return (
-    <div className={`workspace v3workspace lindexInspired n9Layout ${member ? 'lindexMember' : admin ? 'lindexAdmin' : 'lindexStaff'}`} style={theme}>
-      <header className="v3MobileHeader">
-        <div className="clubBrand mini">{club.logo_url ? <img src={club.logo_url} alt="" /> : <div className="clubMark">{club.name.slice(0, 2).toUpperCase()}</div>}<b>{club.name}</b></div>
-        <button type="button" onClick={() => setMobile(!mobile)} aria-label={mobile ? "Close navigation" : "Open navigation"} aria-expanded={mobile} aria-controls="nadorio-workspace-navigation">{mobile ? <X /> : <Menu />}</button>
-      </header>
-      {mobile && <button type="button" className="n81NavBackdrop" aria-label="Close navigation" onClick={closeMobile} />}
-      <aside id="nadorio-workspace-navigation" className={`sidebar clubSidebar v3Sidebar ${mobile ? 'mobileOpen' : ''}`}>
-        <div className="clubBrand">{club.logo_url ? <img src={club.logo_url} alt="" /> : <div className="clubMark">{club.name.slice(0, 2).toUpperCase()}</div>}<div><b>{club.name}</b><span>{member ? (club.organization_type==='hoa'?'Resident Portal':'Member Portal') : 'Organization Management'}</span></div></div>
-        <nav className="nav v3Nav">
-          {club.organization_type && club.organization_type !== 'private_club' && <Link className={path === `/workspace/${id}/industry` ? 'active' : ''} href={`/workspace/${id}/industry`} onClick={closeMobile}><Building2 size={18}/> Industry Hub</Link>}<Link aria-current={path === `/workspace/${id}` ? 'page' : undefined} className={`v3NavHome ${path === `/workspace/${id}` ? 'active' : ''}`} href={`/workspace/${id}`} onClick={closeMobile}><Home size={18} /> Home</Link>
-          {member ? (
-            <>
-              <div className="v3NavGroup"><span>MY ACCOUNT</span>
-                <Link className={path.endsWith('/profile') ? 'active' : ''} href={`/workspace/${id}/profile`} onClick={closeMobile}><UserRound size={16}/> My Profile</Link>
-                <Link className={path.endsWith('/card') ? 'active' : ''} href={`/workspace/${id}/card`} onClick={closeMobile}><CreditCard size={16}/> Membership Card</Link>
-                <Link className={path.endsWith('/household') ? 'active' : ''} href={`/workspace/${id}/household`} onClick={closeMobile}><UsersRound size={16}/> My Household</Link>
-                <Link className={path.endsWith('/notifications') ? 'active' : ''} href={`/workspace/${id}/notifications`} onClick={closeMobile}><Bell size={16}/> Notifications</Link>
-                <Link className={path.endsWith('/directory') ? 'active' : ''} href={`/workspace/${id}/directory`} onClick={closeMobile}><UsersRound size={16}/> Member Directory</Link>
-              </div>
-              {map.has('golf') && <div className="v3NavGroup"><span>GOLF & SCORING</span>
-                <Link className={path.endsWith('/scorecard') ? 'active' : ''} href={`/workspace/${id}/scorecard`} onClick={closeMobile}><Flag size={16}/> My Scorecard</Link>
-                <Link className={path.endsWith('/golf-index') ? 'active' : ''} href={`/workspace/${id}/golf-index`} onClick={closeMobile}><Flag size={16}/> My Golf Index</Link>
-                <Link className={path.endsWith('/golf') ? 'active' : ''} href={`/workspace/${id}/golf`} onClick={closeMobile}><Flag size={16}/> Golf & Tournaments</Link>
-              </div>}
-              {['events','tee_sheet','amenities','reservations','documents','communications','access'].some(k => map.has(k)) && <div className="v3NavGroup"><span>CLUB SERVICES</span>
-                {['events','tee_sheet','amenities','reservations','documents','communications','access'].filter(k => map.has(k)).map(k => {const [s,l] = defs[k]; return <Link key={k} className={path === `/workspace/${id}${s}` ? 'active' : ''} href={`/workspace/${id}${s}`} onClick={closeMobile}>{map.get(k)?.nav_label || l}</Link>;})}
-              </div>}
-            </>
-          ) : (
-            <>
-              {admin && <div className="v3NavGroup"><span>PEOPLE & APPROVALS</span><Link className={path.endsWith('/people') ? 'active' : ''} href={`/workspace/${id}/people`} onClick={closeMobile}><ShieldCheck size={16}/> Review Applications</Link></div>}
-              {groups.map(g => { const items = g.keys.filter(k => map.has(k)); if (!items.length) return null;
-                const expanded = openGroups[g.label] ?? items.some(k => path === `/workspace/${id}${defs[k][0]}`);
-                return <div className="v3NavGroup n10CollapsibleNav" key={g.label}>
-                  <button type="button" className="n10GroupToggle" aria-expanded={expanded} onClick={() => setOpenGroups(v => ({...v,[g.label]:!expanded}))}>
-                    <span>{g.label}</span><ChevronDown size={15} className={expanded ? 'n10Rotated' : ''}/>
-                  </button>
-                  {expanded && items.map(k => { const [s,l] = defs[k]; const mod: any = map.get(k); return <Link key={k} className={path === `/workspace/${id}${s}` ? 'active' : ''} href={`/workspace/${id}${s}`} onClick={closeMobile}>{mod?.nav_label || l}</Link>; })}
-                </div>;
-              })}
-            </>
-          )}
-          {admin && <div className="v3NavGroup"><span>ADMINISTRATION</span><Link className={path === `/workspace/${id}/settings` ? 'active' : ''} href={`/workspace/${id}/settings`} onClick={closeMobile}><Settings size={16} /> Organization Settings</Link><Link className={path === `/workspace/${id}/audit` ? 'active' : ''} href={`/workspace/${id}/audit`} onClick={closeMobile}><ShieldCheck size={16}/> Audit & Security</Link></div>}
-        </nav>
-        <div className="sidefoot"><NadorioLogo /><div className="version">NADORIO 10.0 · {role.replace('_', ' ')}</div><a className="lindexCd7Credit" href="https://cd7technologies.com" target="_blank" rel="noopener noreferrer">Powered by <strong>CD7 Technologies LLC</strong></a><button className="signout" onClick={out}><LogOut size={15} /> Sign out</button></div>
-      </aside>
-      <main className="main clubMain v3Main">
-        {children}
+    return () => {
+      live = false;
+    };
+  }, [id, router, revision]);
+  if (error)
+    return (
+      <main className="v11State" role="alert">
+        <h1>Workspace unavailable</h1>
+        <p>{error}</p>
+        <button onClick={() => setRevision((v) => v + 1)}>Retry</button>{" "}
+        <Link href="/organizations">Your organizations</Link>
       </main>
-      {member && <nav className="memberBottomNav"><Link href={`/workspace/${id}`}><Home /><span>Home</span></Link><Link href={`/workspace/${id}/card`}><CreditCard/><span>Card</span></Link><Link href={`/workspace/${id}/notifications`}><Bell/><span>Alerts</span></Link><Link href={`/workspace/${id}/profile`}><UserRound/><span>Profile</span></Link>{map.has('events') && <Link href={`/workspace/${id}/events`}><CalendarDays /><span>Events</span></Link>}{map.has('tee_sheet') && <Link href={`/workspace/${id}/tee-sheet`}><Clock3 /><span>Tee Times</span></Link>}{map.has('golf') && <Link href={`/workspace/${id}/scorecard`}><Flag /><span>Scores</span></Link>}</nav>}
-    </div>
+    );
+  if (!data)
+    return (
+      <main className="v11State" role="status">
+        Verifying organization access…
+      </main>
+    );
+  const { club, access } = data;
+  const base = `/workspace/${id}`;
+  const member = access.role === "member";
+  const admin = isAdmin(access.role);
+  const type = getOrganizationType(club.organization_type);
+  const items: NavItem[] = [{ href: base, label: "Dashboard" }];
+  if (member)
+    items.push({
+      href: base + "/card",
+      label: "My membership",
+      group: "My account",
+    });
+  for (const m of navigationFor(access)) {
+    if (member && m.key === "members") {
+      items.push({
+        href: base + "/directory",
+        label: "Directory",
+        group: "Organization services",
+      });
+      continue;
+    }
+    items.push({
+      href: base + "/" + m.path,
+      label: m.key === "members" ? type.memberLabel : m.name,
+      group: member ? type.serviceLabel : m.group,
+    });
+  }
+  if (admin && canUseModule(access, "members"))
+    items.push({
+      href: base + "/people",
+      label: "Membership applications",
+      group: "People & access",
+    });
+  if (canUseModule(access, "golf"))
+    items.push(
+      {
+        href: base + "/scorecard",
+        label: "My scorecard",
+        group: member ? type.serviceLabel : "Organization services",
+      },
+      {
+        href: base + "/golf-index",
+        label: "My golf index",
+        group: member ? type.serviceLabel : "Organization services",
+      },
+    );
+  if (admin)
+    items.push(
+      {
+        href: base + "/team-access",
+        label: "People & roles",
+        group: "People & access",
+      },
+      {
+        href: base + "/permissions",
+        label: "Staff permissions",
+        group: "People & access",
+      },
+      {
+        href: base + "/settings",
+        label: "Branding & modules",
+        group: "Organization",
+      },
+      { href: base + "/audit", label: "Audit history", group: "Organization" },
+    );
+  items.push({
+    href: base + "/profile",
+    label: "My profile",
+    group: "Account",
+  });
+  async function out() {
+    const { error } = await createClient().auth.signOut();
+    if (error) {
+      setError("Sign out failed. Please retry.");
+      return;
+    }
+    router.replace("/login");
+    router.refresh();
+  }
+  return (
+    <Context.Provider
+      value={{ ...data, refresh: () => setRevision((v) => v + 1) }}
+    >
+      <PortalFrame
+        name={club.name}
+        subtitle={
+          member
+            ? "Member portal"
+            : admin
+              ? "Organization management"
+              : "Staff workspace"
+        }
+        logo={club.logo_url}
+        items={items}
+        theme={organizationTheme(club.primary_color) as CSSProperties}
+        onSignOut={out}
+        footer={
+          <>
+            <Link href="/organizations">Switch organization</Link>
+            {access.role === "super_admin" && (
+              <Link href="/dashboard">CD7 platform</Link>
+            )}
+          </>
+        }
+      >
+        {workspaceRouteAccess(
+          access,
+          path.slice(base.length).replace(/^\//, ""),
+        ) ? (
+          children
+        ) : (
+          <section role="alert">
+            <h1>Feature unavailable</h1>
+            <p>
+              This feature is disabled or outside your assigned permissions.
+            </p>
+          </section>
+        )}
+      </PortalFrame>
+    </Context.Provider>
   );
 }

@@ -1,1 +1,148 @@
-'use client';import {useEffect,useState} from 'react';import {useParams} from 'next/navigation';import {Search,ShieldCheck,UserCheck,UsersRound} from 'lucide-react';import WorkspaceHeader from '../../../../components/WorkspaceHeader';import {createClient} from '../../../../lib/supabase/client';export default function Page(){const{id}=useParams<{id:string}>();const[members,setMembers]=useState<any[]>([]),[logs,setLogs]=useState<any[]>([]),[q,setQ]=useState(''),[member,setMember]=useState(''),[type,setType]=useState('clubhouse'),[guest,setGuest]=useState('');async function load(){const sb=createClient();const[{data:m},{data:l}]=await Promise.all([sb.from('members').select('id,full_name,member_number,good_standing,membership_types(name)').eq('club_id',id).eq('status','active').order('full_name'),sb.from('access_log').select('*,members(full_name)').eq('club_id',id).order('checked_in_at',{ascending:false}).limit(50)]);setMembers(m||[]);setLogs(l||[])}useEffect(()=>{load()},[id]);async function checkin(){if(!member&&!guest)return;const sb=createClient();const{data:{user}}=await sb.auth.getUser();await sb.from('access_log').insert({club_id:id,member_id:member||null,guest_name:guest||null,access_type:type,checked_in_by:user?.id});setGuest('');setMember('');load()}const filtered=members.filter(m=>`${m.full_name} ${m.member_number||''}`.toLowerCase().includes(q.toLowerCase())).slice(0,8);return <><WorkspaceHeader title="NADORIO Access" subtitle="Fast member verification, guest access and club check-in"/><div className="v5AccessGrid"><section className="panel"><div className="panelhead">Quick member check-in</div><div className="v5Search"><Search/><input placeholder="Search member name or number" value={q} onChange={e=>setQ(e.target.value)}/></div>{q&&<div className="v5SearchResults">{filtered.map(m=><button key={m.id} onClick={()=>{setMember(m.id);setQ(m.full_name)}}><span className="v5Avatar">{m.full_name.split(' ').map((a:string)=>a[0]).slice(0,2).join('')}</span><div><b>{m.full_name}</b><small>{m.membership_types?.name||'Member'} · {m.good_standing?'Good standing':'Review needed'}</small></div><UserCheck/></button>)}</div>}<div className="v5CheckinControls"><select value={type} onChange={e=>setType(e.target.value)}><option value="clubhouse">Clubhouse</option><option value="golf">Golf</option><option value="pool">Pool</option><option value="fitness">Fitness</option><option value="tennis">Tennis</option></select><button className="button gradient" onClick={checkin}><ShieldCheck/> Check In Member</button></div></section><aside className="panel"><div className="panelhead">Guest check-in</div><div className="settingsBody"><input placeholder="Guest name" value={guest} onChange={e=>setGuest(e.target.value)}/><select value={type} onChange={e=>setType(e.target.value)}><option value="clubhouse">Clubhouse</option><option value="golf">Golf</option><option value="pool">Pool</option></select><button className="button secondary" onClick={checkin}><UsersRound/> Check In Guest</button></div></aside></div><div className="panel"><div className="panelhead">Recent access</div>{logs.map(x=><div className="datarow" key={x.id}><b>{x.members?.full_name||x.guest_name||'Guest'}</b><span className="chip">{x.access_type}</span><span>{new Date(x.checked_in_at).toLocaleString()}</span></div>)}{!logs.length&&<div className="empty">No check-ins yet.</div>}</div></>}
+"use client";
+import { useEffect, useState, type FormEvent } from "react";
+import { useWorkspace } from "../../../../components/WorkspaceShell";
+import { createClient } from "../../../../lib/supabase/client";
+import { canUseModule } from "../../../../lib/modules";
+export default function Checkin() {
+  const { club, access, userId } = useWorkspace();
+  const [members, setMembers] = useState<any[]>([]),
+    [rows, setRows] = useState<any[]>([]),
+    [member, setMember] = useState(""),
+    [guest, setGuest] = useState(""),
+    [type, setType] = useState((club.checkin_activities || ["General"])[0]),
+    [message, setMessage] = useState(""),
+    [busy, setBusy] = useState(false);
+  async function load() {
+    const sb = createClient();
+    const [m, l] = await Promise.all([
+      sb
+        .from("members")
+        .select("id,full_name,member_number,good_standing")
+        .eq("club_id", club.id)
+        .eq("status", "active")
+        .order("full_name"),
+      sb
+        .from("access_log")
+        .select("*,members(full_name)")
+        .eq("club_id", club.id)
+        .order("checked_in_at", { ascending: false })
+        .limit(100),
+    ]);
+    if (m.error || l.error)
+      setMessage(
+        m.error?.message || l.error?.message || "Unable to load check-ins",
+      );
+    else {
+      setMembers(m.data || []);
+      setRows(l.data || []);
+    }
+  }
+  useEffect(() => {
+    void load();
+  }, [club.id]);
+  async function checkin(e: FormEvent) {
+    e.preventDefault();
+    if ((!member && !guest.trim()) || (member && guest.trim()))
+      return setMessage("Select a member or enter a guest, not both.");
+    setBusy(true);
+    const { error } = await createClient()
+      .from("access_log")
+      .insert({
+        club_id: club.id,
+        member_id: member || null,
+        guest_name: guest.trim() || null,
+        access_type: type,
+        checked_in_by: userId,
+      });
+    setMessage(error?.message || "Check-in recorded.");
+    if (!error) {
+      setMember("");
+      setGuest("");
+      await load();
+    }
+    setBusy(false);
+  }
+  return (
+    <>
+      <h1>Sign-in & check-in</h1>
+      <p>
+        Record attendance for the activities configured by your organization.
+      </p>
+      {message && (
+        <p role="status" className="v11Notice">
+          {message}
+        </p>
+      )}
+      {canUseModule(access, "access", "create") && (
+        <form className="panel v11Form" onSubmit={checkin}>
+          <label>
+            Member
+            <select
+              value={member}
+              onChange={(e) => {
+                setMember(e.target.value);
+                setGuest("");
+              }}
+            >
+              <option value="">Select a member, or enter a guest below</option>
+              {members.map((m) => (
+                <option key={m.id} value={m.id}>
+                  {m.full_name} · {m.member_number || "No number"}
+                  {m.good_standing ? "" : " · Review standing"}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            Guest name
+            <input
+              maxLength={120}
+              value={guest}
+              onChange={(e) => {
+                setGuest(e.target.value);
+                setMember("");
+              }}
+            />
+          </label>
+          <label>
+            Activity
+            <select value={type} onChange={(e) => setType(e.target.value)}>
+              {(club.checkin_activities || ["General"])
+                .filter(Boolean)
+                .map((a: string) => (
+                  <option key={a}>{a}</option>
+                ))}
+            </select>
+          </label>
+          <button
+            className="button gradient"
+            disabled={busy || (!member && !guest.trim())}
+          >
+            Record check-in
+          </button>
+        </form>
+      )}
+      <div className="v11TableWrap">
+        <table className="v11Table">
+          <thead>
+            <tr>
+              <th>Person</th>
+              <th>Activity</th>
+              <th>Checked in</th>
+            </tr>
+          </thead>
+          <tbody>
+            {rows.map((r) => (
+              <tr key={r.id}>
+                <td>{r.members?.full_name || r.guest_name}</td>
+                <td>{r.access_type}</td>
+                <td>{new Date(r.checked_in_at).toLocaleString()}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!rows.length && <p>No attendance recorded.</p>}
+      </div>
+    </>
+  );
+}

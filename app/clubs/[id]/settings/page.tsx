@@ -1,4 +1,237 @@
-'use client';
-import {ChangeEvent,useEffect,useState} from 'react';import {useParams,useRouter} from 'next/navigation';import {Archive,ImagePlus,Save,ShieldAlert} from 'lucide-react';import Shell from '../../../../components/Shell';import ClubHeader from '../../../../components/ClubHeader';import {createClient} from '../../../../lib/supabase/client';
-export default function Page(){const {id}=useParams<{id:string}>();const router=useRouter();const [club,setClub]=useState<any>();const [msg,setMsg]=useState('');const [busy,setBusy]=useState(false);async function load(){const {data}=await createClient().from('clubs').select('*').eq('id',id).single();setClub(data)}useEffect(()=>{load()},[id]);async function save(){setBusy(true);const {error}=await createClient().from('clubs').update({name:club.name,plan:club.plan,status:club.status,primary_color:club.primary_color,secondary_color:club.secondary_color,contact_email:club.contact_email,website_url:club.website_url}).eq('id',id);setMsg(error?error.message:'Club settings saved.');setBusy(false)}async function logo(e:ChangeEvent<HTMLInputElement>){const file=e.target.files?.[0];if(!file)return;setBusy(true);const sb=createClient();const ext=file.name.split('.').pop()||'png';const path=`${id}/logo-${Date.now()}.${ext}`;const {error}=await sb.storage.from('club-branding').upload(path,file,{upsert:true});if(error){setMsg(error.message);setBusy(false);return}const {data}=sb.storage.from('club-branding').getPublicUrl(path);await sb.from('clubs').update({logo_url:data.publicUrl}).eq('id',id);await load();setMsg('Club logo updated.');setBusy(false)}async function lifecycle(status:string){if(!confirm(`Change this club to ${status}?`))return;await createClient().from('clubs').update({status,archived_at:status==='archived'?new Date().toISOString():null}).eq('id',id);await load()}async function removeClub(){if(!confirm('Permanently delete this organization and its NADORIO data? This cannot be undone.'))return;if(!confirm('Final confirmation: delete '+club.name+'?'))return;const {error}=await createClient().from('clubs').delete().eq('id',id);if(error){setMsg(error.message);return}router.replace('/clubs')}
- if(!club)return <Shell><div className="loading inner">Loading…</div></Shell>;return <Shell><ClubHeader id={id} title="Settings" subtitle="Organization identity, branding and lifecycle"/><div className="settingsGrid"><div className="panel nomargin"><div className="panelhead">Club identity</div><div className="settingsBody"><div className="brandEditor"><div className="clubLogo xlarge">{club.logo_url?<img src={club.logo_url} alt=""/>:<ImagePlus/>}</div><label className="button secondary fileButton"><ImagePlus size={16}/> Upload club logo<input type="file" accept="image/*" onChange={logo}/></label></div><div className="field"><label>Club name</label><input value={club.name||''} onChange={e=>setClub({...club,name:e.target.value})}/></div><div className="field"><label>Contact email</label><input value={club.contact_email||''} onChange={e=>setClub({...club,contact_email:e.target.value})}/></div><div className="field"><label>Website</label><input value={club.website_url||''} onChange={e=>setClub({...club,website_url:e.target.value})}/></div><div className="colorPair"><div className="field"><label>Primary</label><input type="color" value={club.primary_color||'#138cff'} onChange={e=>setClub({...club,primary_color:e.target.value})}/></div><div className="field"><label>Accent</label><input type="color" value={club.secondary_color||'#19d9e8'} onChange={e=>setClub({...club,secondary_color:e.target.value})}/></div></div><button className="button gradient" onClick={save} disabled={busy}><Save size={16}/> Save settings</button>{msg&&<div className="successMsg">{msg}</div>}</div></div><div className="panel nomargin"><div className="panelhead">CD7 account controls</div><div className="settingsBody"><div className="field"><label>Plan</label><select value={club.plan} onChange={e=>setClub({...club,plan:e.target.value})}><option>starter</option><option>professional</option><option>premier</option></select></div><div className="lifecycle"><div><b>Current status</b><span className={'chip '+(club.status==='active'?'good':'warn')}>{club.status}</span></div><p>Suspended clubs retain data but should not receive normal workspace access. Archive clubs that have left NADORIO.</p><button className="button secondary" onClick={()=>lifecycle(club.status==='suspended'?'active':'suspended')}><ShieldAlert size={16}/>{club.status==='suspended'?'Reactivate':'Suspend club'}</button><button className="dangerButton" onClick={()=>lifecycle('archived')}><Archive size={16}/> Archive club</button><button className="dangerButton" onClick={removeClub}>Permanently Delete Organization</button></div></div></div></div></Shell>}
+"use client";
+import { useEffect, useState, type FormEvent, type ChangeEvent } from "react";
+import { useParams } from "next/navigation";
+import Shell from "../../../../components/Shell";
+import ClubHeader from "../../../../components/ClubHeader";
+import { createClient } from "../../../../lib/supabase/client";
+import { organizationTypes } from "../../../../lib/organization-types";
+export default function Settings() {
+  const { id } = useParams<{ id: string }>();
+  const [club, setClub] = useState<any>(null),
+    [message, setMessage] = useState(""),
+    [busy, setBusy] = useState(false);
+  async function load() {
+    const { data, error } = await createClient()
+      .from("clubs")
+      .select("*")
+      .eq("id", id)
+      .single();
+    if (error) setMessage(error.message);
+    else setClub(data);
+  }
+  useEffect(() => {
+    void load();
+  }, [id]);
+  async function save(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    const { error } = await createClient()
+      .from("clubs")
+      .update({
+        name: club.name.trim(),
+        organization_type: club.organization_type,
+        plan: club.plan,
+        primary_color: club.primary_color,
+        contact_email: club.contact_email,
+        website_url: club.website_url,
+        timezone: club.timezone,
+      })
+      .eq("id", id);
+    setMessage(error?.message || "Organization settings saved.");
+    setBusy(false);
+  }
+  async function lifecycle(status: string) {
+    if (
+      !confirm(
+        `${status === "active" ? "Reactivate" : "Deactivate"} ${club.name}? Data will be retained.`,
+      )
+    )
+      return;
+    setBusy(true);
+    const { error } = await createClient()
+      .from("clubs")
+      .update({
+        status,
+        archived_at: status === "archived" ? new Date().toISOString() : null,
+      })
+      .eq("id", id);
+    setMessage(error?.message || "Organization status updated.");
+    if (!error) await load();
+    setBusy(false);
+  }
+  async function logo(e: ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (
+      !["image/png", "image/jpeg", "image/webp"].includes(file.type) ||
+      file.size > 5 * 1024 * 1024
+    ) {
+      setMessage("Choose a PNG, JPEG, or WebP image under 5 MB.");
+      return;
+    }
+    setBusy(true);
+    try {
+      const sb = createClient();
+      const path = `${id}/logo-${Date.now()}.${file.type.split("/")[1]}`;
+      const { error } = await sb.storage
+        .from("club-branding")
+        .upload(path, file);
+      if (error) throw error;
+      const { data } = sb.storage.from("club-branding").getPublicUrl(path);
+      const result = await sb
+        .from("clubs")
+        .update({ logo_url: data.publicUrl })
+        .eq("id", id);
+      if (result.error) throw result.error;
+      setMessage("Logo updated.");
+      await load();
+    } catch (e: any) {
+      setMessage(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  return (
+    <Shell>
+      <ClubHeader id={id} title="Organization settings" />
+      {message && (
+        <p className="v11Notice" role="status">
+          {message}
+        </p>
+      )}
+      {club ? (
+        <div className="v11Grid">
+          <form className="panel v11Form" onSubmit={save}>
+            <h2>Identity & configuration</h2>
+            <label>
+              Organization name
+              <input
+                required
+                maxLength={160}
+                value={club.name}
+                onChange={(e) => setClub({ ...club, name: e.target.value })}
+              />
+            </label>
+            <label>
+              Organization type
+              <select
+                value={club.organization_type}
+                onChange={(e) =>
+                  setClub({ ...club, organization_type: e.target.value })
+                }
+              >
+                {Object.entries(organizationTypes).map(([key, t]) => (
+                  <option key={key} value={key}>
+                    {t.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Contact email
+              <input
+                type="email"
+                value={club.contact_email || ""}
+                onChange={(e) =>
+                  setClub({ ...club, contact_email: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Website
+              <input
+                type="url"
+                value={club.website_url || ""}
+                onChange={(e) =>
+                  setClub({ ...club, website_url: e.target.value })
+                }
+              />
+            </label>
+            <label>
+              Timezone
+              <input
+                required
+                value={club.timezone}
+                onChange={(e) => setClub({ ...club, timezone: e.target.value })}
+              />
+            </label>
+            <label>
+              Plan
+              <select
+                value={club.plan}
+                onChange={(e) => setClub({ ...club, plan: e.target.value })}
+              >
+                {[
+                  ...new Set([
+                    "starter",
+                    "professional",
+                    "enterprise",
+                    club.plan,
+                  ]),
+                ].map((p) => (
+                  <option key={p}>{p}</option>
+                ))}
+              </select>
+            </label>
+            <label>
+              Primary color
+              <input
+                type="color"
+                value={club.primary_color || "#275e72"}
+                onChange={(e) =>
+                  setClub({ ...club, primary_color: e.target.value })
+                }
+              />
+            </label>
+            <button className="button gradient" disabled={busy}>
+              Save settings
+            </button>
+            <label>
+              Organization logo
+              <input
+                disabled={busy}
+                type="file"
+                accept="image/png,image/jpeg,image/webp"
+                onChange={logo}
+              />
+            </label>
+          </form>
+          <section className="panel">
+            <h2>Organization lifecycle</h2>
+            <p>
+              Current status: <strong>{club.status}</strong>
+            </p>
+            <p>
+              Inactive organizations retain their data. Their normal workspace
+              access and public website are disabled.
+            </p>
+            <button
+              className="button secondary"
+              disabled={busy}
+              onClick={() =>
+                lifecycle(club.status === "active" ? "suspended" : "active")
+              }
+            >
+              {club.status === "active"
+                ? "Suspend organization"
+                : "Reactivate organization"}
+            </button>
+            <p>
+              <button
+                className="button secondary"
+                disabled={busy || club.status === "archived"}
+                onClick={() => lifecycle("archived")}
+              >
+                Archive organization
+              </button>
+            </p>
+          </section>
+        </div>
+      ) : (
+        <p role="status">
+          {message ? "Organization could not be loaded." : "Loading settings…"}
+        </p>
+      )}
+    </Shell>
+  );
+}

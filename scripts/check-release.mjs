@@ -1,14 +1,68 @@
-import { existsSync, readFileSync } from 'node:fs';
-const required = ['app/api/site/[id]/contact/route.ts','app/site/[id]/page.tsx','app/workspace/[id]/site-builder/page.tsx','app/workspace/[id]/email-center/page.tsx','supabase/migrations/014_nadorio_universal_websites.sql','supabase/migrations/015_nadorio_website_pages.sql','app/site/[id]/[slug]/page.tsx','supabase/migrations/016_nadorio_contact_protection.sql'];
-let errors = 0;
-for (const path of required) { const ok=existsSync(path); console.log(`${ok?'OK':'MISSING'} ${path}`); if(!ok) errors++; }
-const announcement = readFileSync('app/api/email/announcement/route.ts','utf8');
-if (!announcement.includes('api.resend.com/emails/batch') || !announcement.includes('to:[email]')) { console.error('Release blocker: announcements must send separate recipient messages.'); errors++; }
-const lindex = readFileSync('app/api/integrations/lindex/route.ts','utf8');
-if (!lindex.includes('LINDEX_INTEGRATION_CLUB_ID') || !lindex.includes("eq('user_id', user.id)") || !lindex.includes("platform.status !== 'connected'")) { console.error('Release blocker: LINDEX metrics require tenant authorization and integration ownership.'); errors++; }
-const p=JSON.parse(readFileSync('package.json','utf8'));
-if (p.version.includes('alpha')) {console.error(`Release blocker: package version is still ${p.version}`);errors++;}
-for(const name of ['NEXT_PUBLIC_SUPABASE_URL','NEXT_PUBLIC_SUPABASE_ANON_KEY','SUPABASE_SERVICE_ROLE_KEY']) {
- console.log(`Vercel required: ${name} (verify in Vercel; not checked locally)`);
+import { existsSync, readFileSync, readdirSync } from "node:fs";
+import { modules, workspaceRouteAccess } from "../lib/modules.ts";
+let failures = 0;
+function check(ok, message) {
+  console.log(`${ok ? "PASS" : "FAIL"} ${message}`);
+  if (!ok) failures++;
 }
-if(errors){console.error(`${errors} release checks failed`);process.exitCode=1;}else console.log('Repository release checks passed. Live testing is still required.');
+for (const file of [
+  "proxy.ts",
+  "lib/modules.ts",
+  "lib/organization-types.ts",
+  "lib/access-context.ts",
+  "supabase/migrations/019_nadorio_v11_access.sql",
+  "tests/database-access.sql",
+  "tests/browser/portals.spec.ts",
+  "docs/V11-DEPLOYMENT.md",
+  "docs/V11-AUDIT.md",
+])
+  check(existsSync(file), file);
+for (const module of modules.filter((m) => m.available))
+  check(
+    existsSync(`app/workspace/[id]/${module.path}/page.tsx`),
+    `${module.key} route exists`,
+  );
+const source = readFileSync("app/api/email/announcement/route.ts", "utf8");
+check(
+  source.includes("individualEmailMessages") &&
+    source.includes("api.resend.com/emails/batch"),
+  "Announcements use isolated recipient messages",
+);
+const contact = readFileSync("app/api/site/[id]/contact/route.ts", "utf8");
+check(
+  contact.includes("v11_public_site") &&
+    contact.includes("body.website") &&
+    contact.includes("SUPABASE_SERVICE_ROLE_KEY"),
+  "Contact retains published-site check, honeypot and server insertion",
+);
+const manifest = JSON.parse(readFileSync("package.json", "utf8")),
+  lock = JSON.parse(readFileSync("package-lock.json", "utf8"));
+check(
+  manifest.version === lock.version &&
+    lock.packages[""].version === manifest.version,
+  "Manifest and lockfile release versions agree",
+);
+const access = {
+  role: "member",
+  active: true,
+  status: "active",
+  modules: [],
+  permissions: [],
+};
+for (const dir of readdirSync("app/workspace/[id]", {
+  withFileTypes: true,
+}).filter((d) => d.isDirectory())) {
+  check(
+    !workspaceRouteAccess(access, dir.name) ||
+      ["profile", "card"].includes(dir.name),
+    `Unlicensed member cannot open ${dir.name}`,
+  );
+}
+check(
+  !readFileSync("app/billing/page.tsx", "utf8").includes("Manage plan <"),
+  "No inert billing actions",
+);
+console.log(
+  "Live Supabase Auth, email delivery, migrations on existing production data, and full acceptance testing remain deployment checks.",
+);
+if (failures) process.exitCode = 1;

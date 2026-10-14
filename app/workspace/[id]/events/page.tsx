@@ -1,3 +1,285 @@
-'use client';
-import {useEffect,useState} from 'react';import {useParams} from 'next/navigation';import {CalendarDays,MapPin,UsersRound} from 'lucide-react';import WorkspaceHeader from '../../../../components/WorkspaceHeader';import {createClient} from '../../../../lib/supabase/client';
-export default function Page(){const{id}=useParams<{id:string}>();const[rows,setRows]=useState<any[]>([]),[regs,setRegs]=useState<any[]>([]),[role,setRole]=useState(''),[f,setF]=useState<any>({title:'',description:'',starts_at:'',location:'',capacity:'',price:0,registration_deadline:'',payment_url:'',image_url:'',guests_allowed:0}),[msg,setMsg]=useState('');async function load(){const sb=createClient();const{data:{user}}=await sb.auth.getUser();if(!user)return;const[{data:e},{data:r},{data:cu}]=await Promise.all([sb.from('club_events').select('*').eq('club_id',id).order('starts_at'),sb.from('event_registrations').select('*').eq('club_id',id),sb.from('club_users').select('role').eq('club_id',id).eq('user_id',user.id).maybeSingle()]);setRows(e||[]);setRegs(r||[]);setRole(cu?.role||'')}useEffect(()=>{load()},[id]);const admin=['owner','admin','manager'].includes(role);async function add(){setMsg('');if(!f.title||!f.starts_at)return setMsg('Event name and start time are required.');const sb=createClient();const{data:{user}}=await sb.auth.getUser();const{error}=await sb.from('club_events').insert({...f,club_id:id,capacity:f.capacity?+f.capacity:null,registration_deadline:f.registration_deadline||null,created_by:user?.id});if(error)return setMsg(error.message);setMsg('Event published.');setF({title:'',description:'',starts_at:'',location:'',capacity:'',price:0,registration_deadline:'',payment_url:'',image_url:'',guests_allowed:0});load()}async function register(e:any){setMsg('');const now=Date.now();if(e.registration_deadline&&new Date(e.registration_deadline).getTime()<now)return setMsg('Registration for this event has closed.');const count=regs.filter(x=>x.event_id===e.id&&x.status!=='cancelled').length;if(e.capacity&&count>=e.capacity)return setMsg('This event is currently full.');const sb=createClient();const{data:{user}}=await sb.auth.getUser();if(!user)return;const{data:m}=await sb.from('members').select('id,full_name').eq('club_id',id).eq('profile_id',user.id).maybeSingle();if(!m)return setMsg('Your member profile is not connected yet.');const{error}=await sb.from('event_registrations').upsert({club_id:id,event_id:e.id,member_id:m.id,user_id:user.id,attendee_name:m.full_name,status:'registered'},{onConflict:'event_id,user_id'});if(error)return setMsg(error.message);setMsg('You are registered.');load()}async function cancel(e:any){const sb=createClient();const{data:{user}}=await sb.auth.getUser();if(!user)return;const{error}=await sb.from('event_registrations').update({status:'cancelled'}).eq('event_id',e.id).eq('user_id',user.id);setMsg(error?error.message:'Registration cancelled.');load()}return <><WorkspaceHeader title="Club Events" subtitle="Discover, register and manage what’s happening around the club"/>{admin&&<div className="panel"><div className="panelhead">Create an event</div><div className="v5EventForm"><input placeholder="Event name" value={f.title} onChange={e=>setF({...f,title:e.target.value})}/><input type="datetime-local" value={f.starts_at} onChange={e=>setF({...f,starts_at:e.target.value})}/><input placeholder="Location" value={f.location} onChange={e=>setF({...f,location:e.target.value})}/><input type="number" placeholder="Capacity" value={f.capacity} onChange={e=>setF({...f,capacity:e.target.value})}/><textarea placeholder="Description" value={f.description} onChange={e=>setF({...f,description:e.target.value})}/><button className="button gradient" onClick={add}>Publish Event</button></div></div>}{msg&&<div className="successMsg">{msg}</div>}<div className="v5EventGrid">{rows.map(e=>{const count=regs.filter(x=>x.event_id===e.id&&x.status!=='cancelled').length;const mine=regs.some(x=>x.event_id===e.id&&x.status!=='cancelled');const full=!!e.capacity&&count>=e.capacity;const closed=!!e.registration_deadline&&new Date(e.registration_deadline).getTime()<Date.now();return <article className="v5EventCard" key={e.id}>{e.image_url&&<img src={e.image_url} alt=""/>}<div className="v5EventBody"><span className="v5Eyebrow">{new Date(e.starts_at).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</span><h2>{e.title}</h2><p>{e.description||'Join your club community for this upcoming event.'}</p><div className="v5EventFacts"><span><CalendarDays/> {new Date(e.starts_at).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'})}</span>{e.location&&<span><MapPin/> {e.location}</span>}<span><UsersRound/> {e.capacity?`${count}/${e.capacity} registered`:`${count} registered`}</span></div>{role==='member'&&(mine?<button className="button secondary" onClick={()=>cancel(e)}>Cancel Registration</button>:<button className="button gradient" disabled={full||closed} onClick={()=>register(e)}>{closed?'Registration Closed':full?'Event Full':'Register'}</button>)}</div></article>})}{!rows.length&&<div className="portalEmpty"><CalendarDays/><b>No events scheduled</b><span>Upcoming club events will appear here.</span></div>}</div></>}
+"use client";
+import { useEffect, useState, type FormEvent } from "react";
+import { useWorkspace } from "../../../../components/WorkspaceShell";
+import { createClient } from "../../../../lib/supabase/client";
+import { canUseModule } from "../../../../lib/modules";
+const empty = {
+  title: "",
+  description: "",
+  starts_at: "",
+  location: "",
+  capacity: "",
+  registration_deadline: "",
+  status: "published",
+};
+export default function Events() {
+  const { club, access, userId } = useWorkspace();
+  const [rows, setRows] = useState<any[]>([]),
+    [regs, setRegs] = useState<any[]>([]),
+    [counts, setCounts] = useState<any[]>([]),
+    [form, setForm] = useState(empty),
+    [message, setMessage] = useState(""),
+    [loading, setLoading] = useState(true),
+    [busy, setBusy] = useState(false);
+  const create = canUseModule(access, "events", "create"),
+    edit = canUseModule(access, "events", "edit");
+  async function load() {
+    try {
+      const sb = createClient();
+      const [events, registrations, totals] = await Promise.all([
+        sb
+          .from("club_events")
+          .select("*")
+          .eq("club_id", club.id)
+          .order("starts_at"),
+        sb.from("event_registrations").select("*").eq("club_id", club.id),
+        sb.rpc("v11_event_counts", { target_club: club.id }),
+      ]);
+      if (events.error || registrations.error || totals.error)
+        throw events.error || registrations.error || totals.error;
+      setRows(events.data || []);
+      setRegs(registrations.data || []);
+      setCounts(totals.data || []);
+    } catch (e: any) {
+      setMessage(e.message);
+    } finally {
+      setLoading(false);
+    }
+  }
+  useEffect(() => {
+    void load();
+  }, [club.id]);
+  async function add(e: FormEvent) {
+    e.preventDefault();
+    setBusy(true);
+    setMessage("");
+    try {
+      if (
+        form.capacity &&
+        (!Number.isInteger(Number(form.capacity)) || Number(form.capacity) < 1)
+      )
+        throw Error("Capacity must be a positive whole number.");
+      const { error } = await createClient()
+        .from("club_events")
+        .insert({
+          ...form,
+          club_id: club.id,
+          created_by: userId,
+          starts_at: new Date(form.starts_at).toISOString(),
+          registration_deadline: form.registration_deadline
+            ? new Date(form.registration_deadline).toISOString()
+            : null,
+          capacity: form.capacity ? Number(form.capacity) : null,
+        });
+      if (error) throw error;
+      setForm(empty);
+      setMessage("Event saved.");
+      await load();
+    } catch (e: any) {
+      setMessage(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function register(id: string, cancel = false) {
+    setBusy(true);
+    setMessage("");
+    try {
+      const { error } = await createClient().rpc("v11_register_event", {
+        target_event: id,
+        cancel,
+      });
+      if (error) throw error;
+      setMessage(
+        cancel ? "Registration cancelled." : "Registration confirmed.",
+      );
+      await load();
+    } catch (e: any) {
+      setMessage(e.message);
+    } finally {
+      setBusy(false);
+    }
+  }
+  async function status(row: any, value: string) {
+    setBusy(true);
+    const { error } = await createClient()
+      .from("club_events")
+      .update({ status: value })
+      .eq("id", row.id)
+      .eq("club_id", club.id);
+    setMessage(error?.message || "Event status saved.");
+    if (!error) await load();
+    setBusy(false);
+  }
+  return (
+    <>
+      <h1>Events</h1>
+      <p>
+        Organization events and registrations. Event times use your browser's
+        local timezone when entered.
+      </p>
+      {message && (
+        <p role="status" className="v11Notice">
+          {message}
+        </p>
+      )}
+      {create && (
+        <form className="panel v11Form" onSubmit={add}>
+          <h2>Create event</h2>
+          <label>
+            Event title
+            <input
+              required
+              maxLength={160}
+              value={form.title}
+              onChange={(e) => setForm({ ...form, title: e.target.value })}
+            />
+          </label>
+          <label>
+            Start date and time
+            <input
+              required
+              type="datetime-local"
+              value={form.starts_at}
+              onChange={(e) => setForm({ ...form, starts_at: e.target.value })}
+            />
+          </label>
+          <label>
+            Location
+            <input
+              value={form.location}
+              maxLength={200}
+              onChange={(e) => setForm({ ...form, location: e.target.value })}
+            />
+          </label>
+          <label>
+            Capacity (blank means unlimited)
+            <input
+              type="number"
+              min="1"
+              step="1"
+              value={form.capacity}
+              onChange={(e) => setForm({ ...form, capacity: e.target.value })}
+            />
+          </label>
+          <label>
+            Registration deadline
+            <input
+              type="datetime-local"
+              value={form.registration_deadline}
+              onChange={(e) =>
+                setForm({ ...form, registration_deadline: e.target.value })
+              }
+            />
+          </label>
+          <label>
+            Description
+            <textarea
+              maxLength={5000}
+              value={form.description}
+              onChange={(e) =>
+                setForm({ ...form, description: e.target.value })
+              }
+            />
+          </label>
+          <label>
+            Publish status
+            <select
+              value={form.status}
+              onChange={(e) => setForm({ ...form, status: e.target.value })}
+            >
+              <option value="draft">Draft</option>
+              <option value="published">Published</option>
+            </select>
+          </label>
+          <button className="button gradient" disabled={busy}>
+            Save event
+          </button>
+        </form>
+      )}
+      {loading && <p role="status">Loading events…</p>}
+      <div className="v11Grid">
+        {rows.map((row) => {
+          const count = Number(
+            counts.find((c) => c.event_id === row.id)?.registered || 0,
+          );
+          const mine = regs.find(
+            (r) =>
+              r.event_id === row.id &&
+              r.user_id === userId &&
+              r.status === "registered",
+          );
+          const closed =
+            row.status !== "published" ||
+            new Date(row.starts_at).getTime() <= Date.now() ||
+            (row.registration_deadline &&
+              new Date(row.registration_deadline).getTime() <= Date.now());
+          const full = row.capacity !== null && count >= row.capacity;
+          return (
+            <section className="panel" key={row.id}>
+              <h2>{row.title}</h2>
+              <p>
+                {new Date(row.starts_at).toLocaleString()} · {row.location}
+              </p>
+              <p>{row.description}</p>
+              <p>
+                {count}
+                {row.capacity !== null ? ` / ${row.capacity}` : ""} registered ·{" "}
+                {row.status}
+              </p>
+              {access.role === "member" &&
+                (mine ? (
+                  <button
+                    className="button secondary"
+                    disabled={busy}
+                    onClick={() => register(row.id, true)}
+                  >
+                    Cancel my registration
+                  </button>
+                ) : (
+                  <button
+                    className="button gradient"
+                    disabled={busy || !!closed || full}
+                    onClick={() => register(row.id)}
+                  >
+                    {closed
+                      ? "Registration closed"
+                      : full
+                        ? "Event full"
+                        : "Register"}
+                  </button>
+                ))}
+              {edit && (
+                <label>
+                  Event status
+                  <select
+                    value={row.status}
+                    disabled={busy}
+                    onChange={(e) => status(row, e.target.value)}
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="published">Published</option>
+                    <option value="cancelled">Cancelled</option>
+                  </select>
+                </label>
+              )}
+              {access.role !== "member" && (
+                <details>
+                  <summary>View registrations</summary>
+                  {regs
+                    .filter((r) => r.event_id === row.id)
+                    .map((r) => (
+                      <p key={r.id}>
+                        {r.attendee_name} · {r.status}
+                      </p>
+                    ))}
+                </details>
+              )}
+            </section>
+          );
+        })}
+      </div>
+      {!loading && !rows.length && <p>No events are available.</p>}
+    </>
+  );
+}
