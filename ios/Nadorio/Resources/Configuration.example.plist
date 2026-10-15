@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0"><dict>
+<key>SupabaseURL</key><string>https://YOUR_PROJECT.supabase.co</string>
+<key>SupabaseAnonKey</key><string>YOUR_PUBLIC_ANON_OR_PUBLISHABLE_KEY</string>
+<key>PrivacyURL</key><string>https://YOUR_DOMAIN/privacy</string>
+<key>SupportURL</key><string>https://YOUR_DOMAIN/support</string>
+<key>DeletionProcessingDays</key><integer>7</integer>
+</dict></plist>

@@ -1,0 +1,5 @@
+Nadorio.xcodeproj/
+Nadorio/Resources/Configuration.plist
+build/
+DerivedData/
+*.xcuserstate

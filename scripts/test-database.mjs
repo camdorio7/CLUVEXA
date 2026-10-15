@@ -44,6 +44,7 @@ try {
   }
   console.log(sql(readFileSync("tests/database-access.sql", "utf8")));
   console.log(sql(readFileSync("tests/database-v12.sql", "utf8")));
+  console.log(sql(readFileSync("tests/database-ios.sql", "utf8")));
   await concurrencyTests(container, database);
 } catch (error) {
   console.error(error.message);
