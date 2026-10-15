@@ -1,4 +1,5 @@
-Nadorio.xcodeproj/
+Nadorio.xcodeproj/xcuserdata/
+Nadorio.xcodeproj/project.xcworkspace/xcuserdata/
 Nadorio/Resources/Configuration.plist
 build/
 DerivedData/

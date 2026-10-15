@@ -6,11 +6,11 @@ Implemented: Keychain-backed password sign-in and refresh, organization switchin
 
 ## Run on a Mac
 
-1. Install Xcode 16+ and its iOS simulator, then `brew install xcodegen`.
+1. Install Xcode 16+ and its iOS simulator. The included `Nadorio.xcodeproj` opens directly; no project generator is needed.
 2. From `ios/`, copy `Nadorio/Resources/Configuration.example.plist` to `Nadorio/Resources/Configuration.plist`. Set the Supabase HTTPS project URL, **public anon/publishable key**, live privacy-policy URL, live support URL, and the deletion processing commitment your team can meet. The configuration file is ignored by Git. The public key will be readable in a shipped app; never use a service-role key.
 3. Ensure database migrations through 020 are applied, then apply **only** `supabase/migrations/021_native_account_deletion.sql` once. This repository's earlier migration-history reconciliation issue must be resolved before running a blanket `supabase db push`. Do not replay migration 001 or delete the existing `platform_role` enum.
-4. Run `xcodegen generate`, open `Nadorio.xcodeproj`, select your Apple Developer team and your registered bundle identifier, then run on a simulator/device. Use separate staging credentials and test organizations first.
-5. Run Product → Test. GitHub's `Native iOS` workflow also generates the project and runs the XCTest suite on a Mac; its placeholder configuration intentionally cannot connect to production.
+4. Open `Nadorio.xcodeproj`, select your Apple Developer team and your registered bundle identifier, then run on a simulator/device. Use separate staging credentials and test organizations first.
+5. Run Product → Test. GitHub's `Native iOS` workflow also validates the project and runs the XCTest suite on a Mac; its placeholder configuration intentionally cannot connect to production.
 
 The Linux development environment cannot compile SwiftUI or run Xcode. A green macOS build and real device testing are required before release; source and database checks are not a substitute.
 
@@ -57,3 +57,5 @@ Native controls help usability; they do not guarantee App Review approval. Befor
 References: [App Review Guidelines](https://developer.apple.com/app-store/review/guidelines/), [account deletion requirements](https://developer.apple.com/support/offering-account-deletion-in-your-app/), [app privacy details](https://developer.apple.com/app-store/app-privacy-details/).
 
 Not included in this initial native build: push notifications, offline writes, Apple Wallet credentials, public self-signup, native password recovery, digital purchases, and the full platform-owner administration suite. Password recovery remains available through the organization's existing account support process. Membership cards are informational; staff must check current eligibility in NADORIO.
+
+To regenerate the checked-in project after adding files, run `python3 scripts/generate_project.py` from `ios/`. The XcodeGen specification is also retained as an optional alternative.

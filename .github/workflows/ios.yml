@@ -13,13 +13,11 @@ jobs:
     timeout-minutes: 25
     steps:
       - uses: actions/checkout@v4
-      - name: Install project generator
-        run: brew install xcodegen
-      - name: Generate project with non-production configuration
+      - name: Prepare non-production configuration
         working-directory: ios
         run: |
           cp Nadorio/Resources/Configuration.example.plist Nadorio/Resources/Configuration.plist
-          xcodegen generate
+          xcodebuild -list -project Nadorio.xcodeproj
       - name: Build and test on iPhone simulator
         working-directory: ios
         run: |
